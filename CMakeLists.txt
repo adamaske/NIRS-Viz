@@ -8,19 +8,19 @@ project(NeuroVisualizer VERSION 1.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-add_subdirectory( vendor/spdlog)
 
 find_package( OpenGL REQUIRED )
 include_directories( ${OPENGL_INCLUDE_DIRS} )
 
 
-add_subdirectory( vendor/glfw )
 include_directories("${GLFW_SOURCE_DIR}/deps")
     set( GLAD_GL "${GLFW_SOURCE_DIR}/deps/glad/gl.h" )
 if(MSVC)
     add_compile_options("/utf-8")
     SET( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:mainCRTStartup" )
 endif()
+
+add_subdirectory( vendor/glfw )
 
 set(IMGUI_SOURCES
     vendor/imgui/imgui.cpp
@@ -29,6 +29,15 @@ set(IMGUI_SOURCES
     vendor/imgui/imgui_widgets.cpp
     vendor/imgui/backends/imgui_impl_glfw.cpp
     vendor/imgui/backends/imgui_impl_opengl3.cpp
+)
+
+add_subdirectory( vendor/spdlog)
+
+add_library(assimp SHARED IMPORTED)
+set_target_properties(assimp PROPERTIES
+    IMPORTED_LOCATION "${VENDOR_DIR}/assimp/assimp-vc132-mt.dll"
+    IMPORTED_IMPLIB "${VENDOR_DIR}/assimp/assimp-vc132-mt.lib"
+    #INTERFACE_INCLUDE_DIRECTORIES "${VENDOR_DIR}/assimp/include/"
 )
 
 set(DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/data")
@@ -47,8 +56,8 @@ set(SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 file(GLOB_RECURSE INCS "${INCLUDE_DIR}/*.h")
 file(GLOB_RECURSE SRCS "${SOURCE_DIR}/*.cpp")
 
-add_executable( ${PROJECT_NAME} ${SRCS} 
-    ${IMGUI_SOURCES} vendor/glad/src/glad.c )
+add_executable( ${PROJECT_NAME} ${SRCS} ${IMGUI_SOURCES} vendor/glad/src/glad.c )
+
 # Add vendor include directories to find header files
 target_include_directories(${PROJECT_NAME} PUBLIC
     # User's own include folder
@@ -59,13 +68,14 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     vendor/glad/include
     vendor/glm
     vendor/imgui
+    vendor/assimp/include
 )
 
-# Link the required libraries
-target_link_libraries(${PROJECT_NAME} 
+# Link the required libraries 
+target_link_libraries(${PROJECT_NAME} PRIVATE
     ${OPENGL_LIBRARIES} 
     glfw 
     spdlog::spdlog
-    #$<$<BOOL:${MINGW}>:ws2_32>
+    #$<$<BOOL:${MINGW}>:ws2_32>  
+    assimp
 )
-
