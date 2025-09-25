@@ -31,6 +31,16 @@ set(IMGUI_SOURCES
     vendor/imgui/backends/imgui_impl_opengl3.cpp
 )
 
+set(DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/data")
+GLOB_RECURSE(DATA_SHARE ${DATA_DIR})
+set(INSTALL_FILES ${DATA_SHARE})
+
+# Install the listed files to a 'data' subdirectory under the install prefix
+install(
+    FILES ${INSTALL_FILES}
+    DESTINATION "share/my_project_name/data"
+)
+
 set(INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
 set(SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
