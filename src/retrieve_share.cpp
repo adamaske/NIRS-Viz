@@ -1,6 +1,9 @@
 #include <string>
 #include <filesystem> // C++17
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
 std::filesystem::path getExecutablePath() {
     // Platform-specific code to get the path of the running executable
 #ifdef _WIN32

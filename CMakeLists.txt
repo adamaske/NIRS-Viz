@@ -1,5 +1,5 @@
 # Set the minimum required version of CMake
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.15)
 
 # Define the project name
 project(NeuroVisualizer VERSION 1.0)
@@ -32,7 +32,7 @@ set(IMGUI_SOURCES
 )
 
 set(DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/data")
-GLOB_RECURSE(DATA_SHARE ${DATA_DIR})
+file(GLOB_RECURSE DATA_SHARE "${DATA_DIR}/*")
 set(INSTALL_FILES ${DATA_SHARE})
 
 # Install the listed files to a 'data' subdirectory under the install prefix
