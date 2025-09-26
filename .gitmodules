@@ -22,3 +22,6 @@
 [submodule "vendor/HighFive"]
 	path = vendor/HighFive
 	url = https://github.com/BlueBrain/HighFive.git
+[submodule "vendor/tinyobjloader"]
+	path = vendor/tinyobjloader
+	url = https://github.com/tinyobjloader/tinyobjloader.git

@@ -4,10 +4,18 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp> 
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
+#include <filesystem>
 
+#include "Camera.h"
+#include "Shader.h"
+#include "Mesh.h"
+#include "ReferencePoints.h"
+
+namespace fs = std::filesystem;
 // Function to handle GLFW errors
 void glfw_error_callback(int error, const char* description) {
     //fprintf(stderr, "GLFW Error %d: %s\n", error, description);
@@ -21,6 +29,9 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 
 // Main function
 int main() {
+
+
+
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW" << std::endl;
@@ -33,12 +44,13 @@ int main() {
 
     int screenWidth = 800;
     int screenHeight = 600;
-    GLFWwindow* window = glfwCreateWindow(screenWidth, screenHeight, "OpenGL & ImGui Project", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(screenWidth, screenHeight, "NIRS Visualizer", NULL, NULL);
     if (window == NULL) {
         spdlog::error("Failed to create GLFW window");
         glfwTerminate();
         return 1;
     }
+
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
@@ -48,80 +60,102 @@ int main() {
         return 1;
     }
 
-    // 4. Setup ImGui
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     ImGui::StyleColorsDark();
 
-    // Setup platform and renderer backends
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 460");
 
-    // Clear color for the background
+    //glfwSwapInterval(1);
+    glEnable(GL_DEPTH_TEST);
+
+
+    fs::path resource_dir = fs::path("C:/dev/NeuroVisualizer/data");
+
+    fs::path vertex_path = resource_dir / "Shaders/Phong.vert";
+    fs::path fragment_path = resource_dir / "Shaders/Phong.frag";
+    fs::path mesh_path = resource_dir / "cortex.obj";
+    
+    Camera camera(glm::vec3(0, 0, 300.0f));
+    Shader mesh_shader(vertex_path, fragment_path);
+    Mesh mesh(mesh_path);
+	ReferencePoints refpts(resource_dir / "Colin/anatomical/refpts.txt", resource_dir / "Colin/anatomical/refpts_labels.txt");
+
+	static float cortex_z_rotation = 0.0f;
+    static float model_z_position = 0.0f;
+    static float refpts_x_position = 0.0f;
+
     glm::vec4 clear_color = glm::vec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-    // GLM variables for transformations
-    glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-    glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-
-    // 5. Main render loop
     while (!glfwWindowShouldClose(window)) {
-        // Poll for and process events
         glfwPollEvents();
-
-        // Start the ImGui frame
+        
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // ImGui window for GLM information and controls
-        ImGui::Begin("GLM and Transformations");
-        ImGui::Text("Camera Position: (%.2f, %.2f, %.2f)", cameraPos.x, cameraPos.y, cameraPos.z);
-        ImGui::Text("Camera Target: (%.2f, %.2f, %.2f)", cameraTarget.x, cameraTarget.y, cameraTarget.z);
-        ImGui::Text("Camera Up: (%.2f, %.2f, %.2f)", cameraUp.x, cameraUp.y, cameraUp.z);
+        // --- ImGui UI Definition ---
+        ImGui::Begin("Cortex Controller");
 
-        // Use a slider to move the camera
-        ImGui::SliderFloat3("Camera Position", &cameraPos.x, -10.0f, 10.0f);
+        // Slider for Mesh's position (moving the object)
+        ImGui::SliderFloat("Mesh Z Position", &model_z_position, -200.0f, 200.0f, "%.1f units");
+        ImGui::SliderFloat("Mesh Z Rotation", &cortex_z_rotation, -180.0f, 180.0f, "%.1f units");
+        ImGui::SliderFloat("refpts_x_position", &refpts_x_position, -180.0f, 180.0f, "%.1f units");
 
-        // Calculate the view and projection matrices using GLM
-        glm::mat4 view = glm::lookAt(cameraPos, cameraTarget, cameraUp);
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
+        // NEW SLIDER: Controls Camera distance (moving the camera)
+        // Range 10.0f (close) to 500.0f (far)
 
-        // Display matrix values (first column)
-        ImGui::Text("View Matrix (Column 0):");
-        ImGui::Text("%.2f %.2f %.2f %.2f", view[0][0], view[0][1], view[0][2], view[0][3]);
-
-        ImGui::Text("Projection Matrix (Column 0):");
-        ImGui::Text("%.2f %.2f %.2f %.2f", projection[0][0], projection[0][1], projection[0][2], projection[0][3]);
-
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
         ImGui::End();
 
-        // Create a simple ImGui window for the background color slider
-        ImGui::Begin("Background Color");
-        ImGui::Text("This is a basic ImGui window.");
-        ImGui::SliderFloat("Float Slider", &clear_color.x, 0.0f, 1.0f);
-        ImGui::End();
+        glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+       
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, model_z_position));
+		model = glm::rotate(model, glm::radians(cortex_z_rotation), glm::vec3(0.0f, 1.0f, 0.0f));
 
-        // Rendering
+        auto view = camera.GetViewMatrix();
+		auto projection = camera.GetProjectionMatrix();
+
+
+        mesh_shader.Bind();
+
+        mesh_shader.SetUniformMat4f("model", model);
+        mesh_shader.SetUniformMat4f("view", view);
+        mesh_shader.SetUniformMat4f("projection", projection);
+
+        mesh_shader.SetUniform3f("lightPos", glm::vec3(0.0f, 120.0f, 50.0f));   // adjust as needed
+        mesh_shader.SetUniform3f("lightColor", glm::vec3(1.0f, 1.0f, 1.0f)); // white light
+
+        // Camera
+        mesh_shader.SetUniform3f("viewPos", camera.position); // you’ll need a getter in Camera
+
+        // Material (object base color)
+        mesh_shader.SetUniform3f("objectColor", glm::vec3(1.0f, 0.5f, 0.5f)); // pinkish brain
+
+        glBindVertexArray(mesh.VAO);
+        glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+
+        glDisable(GL_DEPTH_TEST);
+
+        glm::mat4 refpts_T = glm::mat4(1.0f);
+		refpts_T = glm::translate(refpts_T, glm::vec3(refpts_x_position, 0.0f, 0.0));
+		refpts_T = glm::scale(refpts_T, glm::vec3(0.5f, 0.5f, 0.5f)); // make refpts larger
+        refpts_T = glm::rotate(refpts_T, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		refpts.Draw(view, projection, refpts_T);
+        glEnable(GL_DEPTH_TEST);
+
         ImGui::Render();
-        int display_w, display_h;
-        glfwGetFramebufferSize(window, &display_w, &display_h);
-        glViewport(0, 0, display_w, display_h);
-        glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
-        glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-        // Swap buffers to display the rendered image
         glfwSwapBuffers(window);
     }
 
-    // 6. Cleanup
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
     glfwDestroyWindow(window);
     glfwTerminate();
 

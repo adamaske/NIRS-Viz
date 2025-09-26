@@ -8,6 +8,7 @@ project(NeuroVisualizer VERSION 1.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+set(VENDOR_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor")
 
 find_package( OpenGL REQUIRED )
 include_directories( ${OPENGL_INCLUDE_DIRS} )
@@ -20,23 +21,25 @@ if(MSVC)
     SET( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:mainCRTStartup" )
 endif()
 
+
 add_subdirectory( vendor/glfw )
 
 set(IMGUI_SOURCES
-    vendor/imgui/imgui.cpp
-    vendor/imgui/imgui_draw.cpp
-    vendor/imgui/imgui_tables.cpp
-    vendor/imgui/imgui_widgets.cpp
-    vendor/imgui/backends/imgui_impl_glfw.cpp
-    vendor/imgui/backends/imgui_impl_opengl3.cpp
+    ${VENDOR_DIR}/imgui/imgui.cpp
+    ${VENDOR_DIR}/imgui/imgui_draw.cpp
+    ${VENDOR_DIR}/imgui/imgui_tables.cpp
+    ${VENDOR_DIR}/imgui/imgui_widgets.cpp
+    ${VENDOR_DIR}/imgui/backends/imgui_impl_glfw.cpp
+    ${VENDOR_DIR}/imgui/backends/imgui_impl_opengl3.cpp
 )
+
 
 add_subdirectory( vendor/spdlog)
 
 add_library(assimp SHARED IMPORTED)
 set_target_properties(assimp PROPERTIES
-    IMPORTED_LOCATION "${VENDOR_DIR}/assimp/assimp-vc132-mt.dll"
-    IMPORTED_IMPLIB "${VENDOR_DIR}/assimp/assimp-vc132-mt.lib"
+    IMPORTED_LOCATION "${VENDOR_DIR}/assimp/bin/assimp.dll"
+    IMPORTED_IMPLIB "${VENDOR_DIR}/assimp/lib/assimp-vc143-mt.lib"
     #INTERFACE_INCLUDE_DIRECTORIES "${VENDOR_DIR}/assimp/include/"
 )
 
@@ -60,22 +63,20 @@ add_executable( ${PROJECT_NAME} ${SRCS} ${IMGUI_SOURCES} vendor/glad/src/glad.c 
 
 # Add vendor include directories to find header files
 target_include_directories(${PROJECT_NAME} PUBLIC
-    # User's own include folder
     ${INCLUDE_DIR}
-    
-    vendor/glfw/include
-    vendor/spdlog/include
-    vendor/glad/include
-    vendor/glm
-    vendor/imgui
-    vendor/assimp/include
+    ${VENDOR_DIR}/glfw/include
+    ${VENDOR_DIR}/spdlog/include
+    ${VENDOR_DIR}/glad/include
+    ${VENDOR_DIR}/glm
+    ${VENDOR_DIR}/imgui
+    ${VENDOR_DIR}/assimp/include
 )
 
 # Link the required libraries 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     ${OPENGL_LIBRARIES} 
     glfw 
-    spdlog::spdlog
-    #$<$<BOOL:${MINGW}>:ws2_32>  
+    $<$<BOOL:${MINGW}>:ws2_32> 
+    spdlog::spdlog 
     assimp
 )
