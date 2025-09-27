@@ -61,6 +61,9 @@ file(GLOB_RECURSE SRCS "${SOURCE_DIR}/*.cpp")
 
 add_executable( ${PROJECT_NAME} ${SRCS} ${IMGUI_SOURCES} vendor/glad/src/glad.c )
 
+# Include the subdirectory and use the target HighFive.
+#add_subdirectory(${VENDOR_DIR}/HighFive INTERFACE)
+
 # Add vendor include directories to find header files
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${INCLUDE_DIR}
@@ -70,7 +73,10 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${VENDOR_DIR}/glm
     ${VENDOR_DIR}/imgui
     ${VENDOR_DIR}/assimp/include
+    ${VENDOR_DIR}/HighFive/include
+
 )
+ 
 
 # Link the required libraries 
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -79,4 +85,5 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     $<$<BOOL:${MINGW}>:ws2_32> 
     spdlog::spdlog 
     assimp
+    #HighFive
 )

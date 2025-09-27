@@ -25,3 +25,6 @@
 [submodule "vendor/tinyobjloader"]
 	path = vendor/tinyobjloader
 	url = https://github.com/tinyobjloader/tinyobjloader.git
+[submodule "vendor/h5cpp"]
+	path = vendor/h5cpp
+	url = https://github.com/ess-dmsc/h5cpp.git

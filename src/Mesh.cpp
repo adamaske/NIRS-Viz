@@ -11,11 +11,6 @@ Mesh::Mesh(const fs::path& obj_filepath)
 	// Read OBJ file directly, 
 	LoadObj(obj_filepath.string(), vertices, indices);
     Init();
-
-    // Debug OBJ
-	spdlog::info("Loaded OBJ file: {}", obj_filepath.string());
-	spdlog::info("Vertices count: {}", vertices.size());
-	spdlog::info("Indices count: {}", indices.size());
 }
 
 Mesh::~Mesh()

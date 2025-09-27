@@ -29,7 +29,6 @@ void Camera::UpdateCameraVectors()
      _front.z = sin(rad_yaw) * cos(rad_pitch);
     front = glm::normalize(_front);
 
-    // Recalculate Right and Up vectors
     right = glm::normalize(glm::cross(front, WORLD_UP));
     up = glm::normalize(glm::cross(right, front));
 }

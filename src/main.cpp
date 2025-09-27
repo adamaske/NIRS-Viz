@@ -14,6 +14,7 @@
 #include "Shader.h"
 #include "Mesh.h"
 #include "ReferencePoints.h"
+#include "Snirf.h"
 
 namespace fs = std::filesystem;
 // Function to handle GLFW errors
@@ -83,6 +84,7 @@ int main() {
     Shader mesh_shader(vertex_path, fragment_path);
     Mesh mesh(mesh_path);
 	ReferencePoints refpts(resource_dir / "Colin/anatomical/refpts.txt", resource_dir / "Colin/anatomical/refpts_labels.txt");
+	SNIRF snirf("C:/dev/NeuroVisualizer/data/example.snirf");
 
 	static float cortex_z_rotation = 0.0f;
     static float model_z_position = 0.0f;
