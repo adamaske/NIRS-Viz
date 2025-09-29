@@ -28,3 +28,6 @@
 [submodule "vendor/h5cpp"]
 	path = vendor/h5cpp
 	url = https://github.com/ess-dmsc/h5cpp.git
+[submodule "vendor/eigen"]
+	path = vendor/eigen
+	url = https://github.com/PX4/eigen.git

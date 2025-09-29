@@ -21,8 +21,9 @@ if(MSVC)
     SET( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:mainCRTStartup" )
 endif()
 
-
 add_subdirectory( vendor/glfw )
+
+
 
 set(IMGUI_SOURCES
     ${VENDOR_DIR}/imgui/imgui.cpp
@@ -32,6 +33,11 @@ set(IMGUI_SOURCES
     ${VENDOR_DIR}/imgui/backends/imgui_impl_glfw.cpp
     ${VENDOR_DIR}/imgui/backends/imgui_impl_opengl3.cpp
 )
+
+
+set(HDF5_ROOT "C:/Program Files/HDF_Group/HDF5/1.14.6")
+
+find_package(HDF5 REQUIRED)
 
 
 add_subdirectory( vendor/spdlog)
@@ -74,7 +80,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${VENDOR_DIR}/imgui
     ${VENDOR_DIR}/assimp/include
     ${VENDOR_DIR}/HighFive/include
-
+    ${HDF5_ROOT}/include
+    ${VENDOR_DIR}/eigen/include 
 )
  
 
@@ -85,5 +92,5 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     $<$<BOOL:${MINGW}>:ws2_32> 
     spdlog::spdlog 
     assimp
-    #HighFive
+    HDF5::HDF5
 )

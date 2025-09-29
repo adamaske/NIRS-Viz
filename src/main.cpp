@@ -31,7 +31,9 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 // Main function
 int main() {
 
+	SNIRF snirf("C:/dev/NeuroVisualizer/data/example.snirf");
 
+    return 0;
 
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit()) {
@@ -84,7 +86,7 @@ int main() {
     Shader mesh_shader(vertex_path, fragment_path);
     Mesh mesh(mesh_path);
 	ReferencePoints refpts(resource_dir / "Colin/anatomical/refpts.txt", resource_dir / "Colin/anatomical/refpts_labels.txt");
-	SNIRF snirf("C:/dev/NeuroVisualizer/data/example.snirf");
+	// snirf("C:/dev/NeuroVisualizer/data/example.snirf");
 
 	static float cortex_z_rotation = 0.0f;
     static float model_z_position = 0.0f;
