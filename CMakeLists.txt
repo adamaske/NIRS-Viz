@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.15)
 
 # Define the project name
-project(NeuroVisualizer VERSION 1.0)
+project(NIRS-Viz VERSION 1.0)
 
 # Set the C++ standard to C++17
 set(CMAKE_CXX_STANDARD 17)
@@ -81,7 +81,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${VENDOR_DIR}/assimp/include
     ${VENDOR_DIR}/HighFive/include
     ${HDF5_ROOT}/include
-    ${VENDOR_DIR}/eigen/include 
+    ${VENDOR_DIR}/Eigen/include 
 )
  
 
