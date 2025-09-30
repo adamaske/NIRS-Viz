@@ -1,6 +1,7 @@
 #include "Camera.h"
 #include <cmath> 
 #include <algorithm>
+#include <spdlog/spdlog.h>
 
 Camera::Camera(glm::vec3 _position, float _yaw, float _pitch)
 {
@@ -40,6 +41,30 @@ void Camera::UpdateAspectRatio(float new_aspect_ratio)
     {
         aspect_ratio = new_aspect_ratio;
     }
+}
+
+void Camera::Update()
+{
+    if (!orbit_cortex || !orbit_target) {
+        return;
+    }
+
+    glm::vec3 target_pos = orbit_target->model_matrix[3]; // Extract translation from model matrix
+    orbit_phi = glm::clamp(orbit_phi, -89.99f, 89.99f);
+    float theta = glm::radians(orbit_theta); 
+    float phi = glm::radians(orbit_phi);   
+
+    float x = orbit_radius * cos(phi) * cos(theta);
+    float y = orbit_radius * sin(phi);
+    float z = orbit_radius * cos(phi) * sin(theta);
+
+    position = target_pos + glm::vec3(x, y, z);
+
+    front = glm::normalize(target_pos - position);
+
+    right = glm::normalize(glm::cross(front, WORLD_UP));
+    up = glm::normalize(glm::cross(right, front));
+
 }
 
 void Camera::Init(float _yaw, float _pitch)
