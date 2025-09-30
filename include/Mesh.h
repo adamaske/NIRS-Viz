@@ -17,6 +17,7 @@ public:
 	~Mesh();
 
 	void Init();
+	void Reset();
 
 	bool LoadObj(const std::string& filename,
 		std::vector<Vertex>& vertices,

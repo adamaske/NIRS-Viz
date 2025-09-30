@@ -1,7 +1,11 @@
 #include "Probe.h"
 
-Probe::Probe()
+Probe::Probe(SNIRF* _snirf)
 {
+	// Get Probe from sNIRF file
+	snirf = _snirf;
+	transform = new Transform();
+	//shader = new Shader("C:/dev/NIRS-Viz/data/Shaders/probe.vert", "C:/dev/NIRS-Viz/data/Shaders/probe.frag");
 }
 
 Probe::~Probe()

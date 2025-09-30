@@ -25,7 +25,6 @@ public:
 	float near_plane = 0.1f;
 	float far_plane = 1000.0f;
 
-	bool orbit_cortex = false;
 	float orbit_theta = 0.0f;
 	float orbit_phi = 0.0f;
 	float orbit_radius = 600.0f;

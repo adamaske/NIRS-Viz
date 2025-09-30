@@ -45,7 +45,7 @@ void Camera::UpdateAspectRatio(float new_aspect_ratio)
 
 void Camera::Update()
 {
-    if (!orbit_cortex || !orbit_target) {
+    if (!orbit_target) {
         return;
     }
 

@@ -5,10 +5,11 @@
 #include <spdlog/spdlog.h>
 #include <string>
 #include <glad/glad.h>
-
+#include "Vertex.h"
 
 ReferencePoints::ReferencePoints(const fs::path& points_file, const fs::path& labels_file)
 {
+
 	labels.clear();
 	points.clear();
 
@@ -32,11 +33,10 @@ ReferencePoints::ReferencePoints(const fs::path& points_file, const fs::path& la
 			continue;
 		}
 
-		points.emplace_back(x, y, z);
+		points.emplace_back(glm::vec3(x, y, z));
 	}
+	points_stream.close();
 
-	// Labels 
-	// for each line in labels file, read line and push to labels vector
 	std::ifstream labels_stream(labels_file);
 	if (!labels_stream.is_open()) {
 		spdlog::error("Could not open labels file: {}", labels_file.string());
@@ -48,13 +48,16 @@ ReferencePoints::ReferencePoints(const fs::path& points_file, const fs::path& la
 	}
 	labels_stream.close();
 
+	// Adjust Points
+	for(size_t i = 0; i < points.size(); i++) {
+		points[i] -= glm::vec3(128.f, 128.f, 128.f);
+	}
+
 	spdlog::info("Loaded {} reference points and {} labels.", points.size(), labels.size());
-	//auto n = 20;
-	//for(int i = 0; i < n; i++ )
-	//{
-	//	spdlog::info("{} : {}, {}, {}", labels[i], points[i].x, points[i].y, points[i].z);
-	//}
-	shader = new Shader("C:/dev/NeuroVisualizer/data/Shaders/refpoints.vert", "C:/dev/NeuroVisualizer/data/Shaders/refpoints.frag");
+
+	transform = new Transform();
+	transform->Rotate(180.0f, 0.0f, 0.0f, 1.0f); // flip upside down
+	shader = new Shader("C:/dev/NIRS-Viz/data/Shaders/refpoints.vert", "C:/dev/NIRS-Viz/data/Shaders/refpoints.frag");
 
 	glGenVertexArrays(1, &pointVAO);
 	glGenBuffers(1, &pointVBO);
@@ -70,12 +73,12 @@ ReferencePoints::ReferencePoints(const fs::path& points_file, const fs::path& la
 	glBindVertexArray(0);
 }
 
-void ReferencePoints::Draw(const glm::mat4& view, const glm::mat4& projection, const glm::mat4& transformation)
+void ReferencePoints::Draw(const glm::mat4& view, const glm::mat4& projection)
 {
 	if (!shader) return;
 	
 	shader->Bind(); 
-	shader->SetUniformMat4f("model", transformation);
+	shader->SetUniformMat4f("model", transform->model_matrix);
 	shader->SetUniformMat4f("view", view);
 	shader->SetUniformMat4f("projection", projection);
 

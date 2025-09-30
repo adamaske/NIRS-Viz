@@ -19,6 +19,7 @@
 #include "Camera.h"
 #include "Cortex.h"
 #include "Snirf.h"
+#include "Probe.h"
 #include "ReferencePoints.h"
 
 namespace fs = std::filesystem;
@@ -81,20 +82,26 @@ int main() {
     fs::path vertex_path = resource_dir / "Shaders/Phong.vert";
     fs::path fragment_path = resource_dir / "Shaders/Phong.frag";
     fs::path mesh_path = resource_dir / "cortex.obj";
-    
+
+
     Camera camera(glm::vec3(0, 0, 300.0f)); // 300 units backwards
 	camera.aspect_ratio = static_cast<float>(screenWidth) / static_cast<float>(screenHeight);
     
     Cortex cortex = Cortex();
     cortex.transform.Translate(glm::vec3(0, 0, -50.0f));
-	camera.orbit_target = &cortex.transform;
+
+    std::unordered_map<std::string, Transform*> orbit_target_map = {
+        {"Cortex", &cortex.transform}
+	};
+    static std::string current_target = "Cortex";
+    camera.orbit_target = orbit_target_map[current_target];
+
+    SNIRF snirf("C:/dev/NIRS-Viz/data/example.snirf");
+    Probe probe(&snirf);
+	orbit_target_map["Probe"] = probe.transform;
 
     ReferencePoints refpts(resource_dir / "Colin/anatomical/refpts.txt", resource_dir / "Colin/anatomical/refpts_labels.txt");
-    SNIRF snirf("C:/dev/NIRS-Viz/data/example.snirf");
-
-	static float cortex_z_rotation = 0.0f;
-    static float model_z_position = 0.0f;
-    static float refpts_x_position = 0.0f;
+	orbit_target_map["Reference Points"] = refpts.transform;
 
     glm::vec4 clear_color = glm::vec4(0.45f, 0.55f, 0.60f, 1.00f);
 
@@ -107,10 +114,28 @@ int main() {
 
         ImGui::Begin("Cortex & Camera Controller");
 
+        if (ImGui::BeginCombo("Orbit Target", current_target.c_str()))
+        {
+            for (auto& [name, transform] : orbit_target_map)
+            {
+                bool is_selected = (current_target == name);
+                if (ImGui::Selectable(name.c_str(), is_selected))
+                {
+                    current_target = name;
+                    camera.orbit_target = transform; // set the camera's orbit target
+                }
+
+                if (is_selected)
+                    ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
 		ImGui::SliderFloat("Camera Distance", &camera.orbit_radius, 0.0f, 2000.0f, "%.1f units");
         ImGui::SliderFloat("Camera Theta", &camera.orbit_theta, -360.0f, 360.0f, "%.1f units");
         ImGui::SliderFloat("Camera Phi", &camera.orbit_phi, -89.9f, 89.9f, "%.1f units");
-		ImGui::Checkbox("Orbit Cortex", &camera.orbit_cortex);
+
+
+        
         
         if (ImGui::Button("Reset Camera")) {
             camera.orbit_radius = 600.0f;
@@ -161,7 +186,7 @@ int main() {
 		auto projection = camera.GetProjectionMatrix();
 
         cortex.Draw(view, projection, camera.position);
-
+		refpts.Draw(view, projection);
 
         //glDisable(GL_DEPTH_TEST);
         //

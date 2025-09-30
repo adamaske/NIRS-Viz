@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <glm/glm.hpp>
 #include <vector>
+#include "Transform.h"
 #include "Shader.h"
 
 namespace fs = std::filesystem;
@@ -13,9 +14,12 @@ public:
 	unsigned int pointVAO;
 	std::vector<glm::vec3> points;
 	std::vector<std::string> labels;
-	Shader* shader;
 	
+	Shader* shader;
+	Transform* transform;
+
+
 	ReferencePoints(const fs::path& points_file, const fs::path& labels_file);
 	
-	void Draw(const glm::mat4& view, const glm::mat4& projection, const glm::mat4& transformation);
+	void Draw(const glm::mat4& view, const glm::mat4& projection);
 };
