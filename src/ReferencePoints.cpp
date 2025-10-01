@@ -56,8 +56,8 @@ ReferencePoints::ReferencePoints(const fs::path& points_file, const fs::path& la
 	spdlog::info("Loaded {} reference points and {} labels.", points.size(), labels.size());
 
 	transform = new Transform();
-	transform->Rotate(180.0f, 0.0f, 0.0f, 1.0f); // flip upside down
-	shader = new Shader("C:/dev/NIRS-Viz/data/Shaders/refpoints.vert", "C:/dev/NIRS-Viz/data/Shaders/refpoints.frag");
+	transform->Rotate(180.0f, glm::vec3(0.0f, 0.0f, 1.0f)); // flip upside down
+	shader = new Shader(std::string("C:/dev/NIRS-Viz/data/Shaders/refpoints.vert"), std::string("C:/dev/NIRS-Viz/data/Shaders/refpoints.frag"));
 
 	glGenVertexArrays(1, &pointVAO);
 	glGenBuffers(1, &pointVBO);
@@ -76,9 +76,8 @@ ReferencePoints::ReferencePoints(const fs::path& points_file, const fs::path& la
 void ReferencePoints::Draw(const glm::mat4& view, const glm::mat4& projection)
 {
 	if (!shader) return;
-	
 	shader->Bind(); 
-	shader->SetUniformMat4f("model", transform->model_matrix);
+	shader->SetUniformMat4f("model", transform->GetMatrix());
 	shader->SetUniformMat4f("view", view);
 	shader->SetUniformMat4f("projection", projection);
 

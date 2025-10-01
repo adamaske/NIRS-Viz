@@ -19,6 +19,7 @@ public:
     // Constructor: Creates a shader program from a single file containing both
     // vertex and fragment shader source code, separated by preprocessor directives.
     Shader(const fs::path& vertex_path, const fs::path& fragment_path);
+    Shader(const std::string& vertex_path, const std::string& fragment_path);
     // Destructor: Deletes the shader program from GPU memory.
     ~Shader();
 

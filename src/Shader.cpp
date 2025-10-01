@@ -8,6 +8,13 @@
 #include <spdlog/spdlog.h>
 Shader::Shader(const fs::path& vertex_path, const fs::path& fragment_path)
 {
+    if (!std::filesystem::exists(vertex_path)) {
+        spdlog::error("Vertex shader file does not exist: {}", vertex_path.string());
+    }
+    if (!std::filesystem::exists(fragment_path)) {
+        spdlog::error("Fragment shader file does not exist: {}", fragment_path.string());
+    }
+
     // Create an input file stream.
     std::ifstream vertex_stream(vertex_path);
     std::stringstream vss;
@@ -18,6 +25,29 @@ Shader::Shader(const fs::path& vertex_path, const fs::path& fragment_path)
     std::stringstream fss;
     fss << fragment_stream.rdbuf();
     
+
+    shader_id = CreateShader(vss.str(), fss.str());
+}
+
+Shader::Shader(const std::string& vertex_path, const std::string& fragment_path)
+{ 
+    if (!std::filesystem::exists(vertex_path)) {
+		spdlog::error("Vertex shader file does not exist : {}", vertex_path);
+    }
+    if (!std::filesystem::exists(fragment_path)) {
+		spdlog::error("Fragment shader file does not exist : {}", fragment_path);
+    }
+
+    // Create an input file stream.
+    std::ifstream vertex_stream(vertex_path);
+    std::stringstream vss;
+    vss << vertex_stream.rdbuf();
+
+
+    std::ifstream fragment_stream(fragment_path);
+    std::stringstream fss;
+    fss << fragment_stream.rdbuf();
+
 
     shader_id = CreateShader(vss.str(), fss.str());
 }

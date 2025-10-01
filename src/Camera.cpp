@@ -49,7 +49,7 @@ void Camera::Update()
         return;
     }
 
-    glm::vec3 target_pos = orbit_target->model_matrix[3]; // Extract translation from model matrix
+    glm::vec3 target_pos = orbit_target->position; // Extract translation from model matrix
     orbit_phi = glm::clamp(orbit_phi, -89.99f, 89.99f);
     float theta = glm::radians(orbit_theta); 
     float phi = glm::radians(orbit_phi);   

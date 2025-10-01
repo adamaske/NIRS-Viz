@@ -14,7 +14,7 @@ Cortex::Cortex() :
 void Cortex::Draw(glm::mat4 view, glm::mat4 proj, glm::vec3 view_position)
 {
 	shader.Bind();
-	shader.SetUniformMat4f("model", transform.model_matrix);
+	shader.SetUniformMat4f("model", transform.GetMatrix());
 	shader.SetUniformMat4f("view", view);
 	shader.SetUniformMat4f("projection", proj);
 

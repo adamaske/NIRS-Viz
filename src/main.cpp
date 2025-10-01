@@ -21,6 +21,7 @@
 #include "Snirf.h"
 #include "Probe.h"
 #include "ReferencePoints.h"
+#include "Head.h"
 
 namespace fs = std::filesystem;
 // Function to handle GLFW errors
@@ -83,25 +84,29 @@ int main() {
     fs::path fragment_path = resource_dir / "Shaders/Phong.frag";
     fs::path mesh_path = resource_dir / "cortex.obj";
 
+    std::unordered_map<std::string, Transform*> orbit_target_map = {};
 
     Camera camera(glm::vec3(0, 0, 300.0f)); // 300 units backwards
 	camera.aspect_ratio = static_cast<float>(screenWidth) / static_cast<float>(screenHeight);
     
+
+    Head head = Head();
+    orbit_target_map["Head"] = head.transform;
+	head.transform->Scale(glm::vec3(100.0f, 100.0f, 100.0f));
+	
     Cortex cortex = Cortex();
     cortex.transform.Translate(glm::vec3(0, 0, -50.0f));
-
-    std::unordered_map<std::string, Transform*> orbit_target_map = {
-        {"Cortex", &cortex.transform}
-	};
-    static std::string current_target = "Cortex";
-    camera.orbit_target = orbit_target_map[current_target];
+	orbit_target_map["Cortex"] = &cortex.transform;
 
     SNIRF snirf("C:/dev/NIRS-Viz/data/example.snirf");
     Probe probe(&snirf);
-	orbit_target_map["Probe"] = probe.transform;
+    orbit_target_map["Probe"] = probe.transform;
 
     ReferencePoints refpts(resource_dir / "Colin/anatomical/refpts.txt", resource_dir / "Colin/anatomical/refpts_labels.txt");
 	orbit_target_map["Reference Points"] = refpts.transform;
+
+    static std::string current_target = "Cortex";
+    camera.orbit_target = orbit_target_map[current_target];
 
     glm::vec4 clear_color = glm::vec4(0.45f, 0.55f, 0.60f, 1.00f);
 
@@ -174,7 +179,7 @@ int main() {
             camera.orbit_phi = -90.0f;
         }
 
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+        ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
         ImGui::End();
 
         glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
@@ -185,10 +190,11 @@ int main() {
         auto view = camera.GetViewMatrix();
 		auto projection = camera.GetProjectionMatrix();
 
-        cortex.Draw(view, projection, camera.position);
-		refpts.Draw(view, projection);
+        //cortex.Draw(view, projection, camera.position);
+		//refpts.Draw(view, projection);
+		head.Draw(view, projection, camera.position);
 
-        //glDisable(GL_DEPTH_TEST);
+        //
         //
         //glm::mat4 refpts_T = glm::mat4(1.0f);
 		//refpts_T = glm::translate(refpts_T, glm::vec3(refpts_x_position, 0.0f, 0.0));
