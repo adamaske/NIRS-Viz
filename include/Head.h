@@ -62,10 +62,4 @@ public:
 
 	void DrawLandmarks(glm::mat4 view, glm::mat4 proj, glm::vec3 veiw_pos);
 
-	bool ClosestPointBetweenLines(
-		const glm::vec3& p1, const glm::vec3& p2,   // line 1
-		const glm::vec3& q1, const glm::vec3& q2,   // line 2
-		glm::vec3& outPoint                        // intersection or midpoint
-	);
-
 };

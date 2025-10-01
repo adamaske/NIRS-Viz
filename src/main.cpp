@@ -190,9 +190,9 @@ int main() {
         auto view = camera.GetViewMatrix();
 		auto projection = camera.GetProjectionMatrix();
 
-        //cortex.Draw(view, projection, camera.position);
-		//refpts.Draw(view, projection);
-		head.Draw(view, projection, camera.position);
+        cortex.Draw(view, projection, camera.position);
+		refpts.Draw(view, projection);
+		//head.Draw(view, projection, camera.position);
 
         //
         //

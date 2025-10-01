@@ -27,10 +27,10 @@ Head::Head()
 
 	}
 	float lm_dist = 100.0;
-	   naison.transform->Translate(0, 0, -lm_dist);
-	    inion.transform->Translate(0, 0, lm_dist);
-	 left_ear.transform->Translate(lm_dist, 0, 0);
-	right_ear.transform->Translate(-lm_dist, 0, 0);
+	naison.transform	->Translate(0, 0, -lm_dist);
+	inion.transform		->Translate(0, 0, lm_dist);
+	left_ear.transform	->Translate(lm_dist, 0, 0);
+	right_ear.transform	->Translate(-lm_dist, 0, 0);
 
 	// Create base lines
 	naison_inion_line = new Line(naison.transform->position, inion.transform->position, glm::vec3(1, 1, 0), 2.0f, line_shader);
@@ -45,8 +45,6 @@ Head::~Head()
 
 void Head::Draw(glm::mat4 view, glm::mat4 proj, glm::vec3 view_pos)
 {
-	spdlog::info("Drawing Head at position: ({}, {}, {})", transform->position.x, transform->position.y, transform->position.z);
-	spdlog::info("Head scale: ({}, {}, {})", transform->scale.x, transform->scale.y, transform->scale.z);
 	shader->Bind();
 	shader->SetUniformMat4f("model", transform->GetMatrix());
 	shader->SetUniformMat4f("view", view);
@@ -120,49 +118,7 @@ void Head::DrawLandmarks(glm::mat4 view, glm::mat4 proj, glm::vec3 veiw_pos)
 
 	naison_inion_line->Draw(view, proj);
 	ear_to_ear_line->Draw(view, proj);
-	for (auto line : lines) {
-		line->Draw(view, proj);
-	}
 
-	glm::vec3 intersection;
-	bool intersects = ClosestPointBetweenLines(
-		naison_inion_line->p1, naison_inion_line->p2,
-		ear_to_ear_line->p1, ear_to_ear_line->p2,
-		intersection
-	);
-
-	spdlog::info("Intersection Naison-Inion & Ear-to-Ear : {} @ ( {}, {}, {} )", intersects, intersection.x, intersection.y, intersection.z);
 
 	ImGui::End();
 }
-
-bool Head::ClosestPointBetweenLines(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& q1, const glm::vec3& q2, glm::vec3& outPoint)
-{
-	glm::vec3 d1 = p2 - p1;
-	glm::vec3 d2 = q2 - q1;
-	glm::vec3 r = p1 - q1;
-
-
-	float a = glm::dot(d1, d1); // squared length of d1
-	float e = glm::dot(d2, d2); // squared length of d2
-	float f = glm::dot(d2, r);
-
-	float EPSILON = 1e-6f;
-	if (a <= EPSILON || e <= EPSILON) return false; // degenerate lines
-
-	float b = glm::dot(d1, d2);
-	float c = glm::dot(d1, r);
-
-	float denom = (a * e) - (b * b);
-	if (fabs(denom) < EPSILON) {
-		outPoint = (p1 + q1) * 0.5f;
-		return false;
-	}
-	float s = (b * f - c * e) / denom;
-	float t = (a * f - b * c) / denom;
-	glm::vec3 cp1 = p1 + s * d1; // closest point on L1
-	glm::vec3 cp2 = q1 + t * d2; // closest point on L2
-	outPoint = (cp1 + cp2) * 0.5f;
-	return glm::length(cp1 - cp2) < 1e-4f; // 
-}
-
