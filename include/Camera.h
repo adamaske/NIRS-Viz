@@ -25,9 +25,9 @@ public:
 	float near_plane = 0.1f;
 	float far_plane = 1000.0f;
 
-	float orbit_theta = 0.0f;
-	float orbit_phi = 0.0f;
-	float orbit_radius = 600.0f;
+	float orbit_theta = -100.0f;
+	float orbit_phi = 22.0f;
+	float orbit_radius = 460;
 	Transform* orbit_target = nullptr;
 
 	Camera(glm::vec3 _position = glm::vec3(0.0f, 0.0f, 3.0f), float _yaw = -90.0f, float _pitch = 0.0f);

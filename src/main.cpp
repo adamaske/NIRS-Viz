@@ -105,7 +105,7 @@ int main() {
     ReferencePoints refpts(resource_dir / "Colin/anatomical/refpts.txt", resource_dir / "Colin/anatomical/refpts_labels.txt");
 	orbit_target_map["Reference Points"] = refpts.transform;
 
-    static std::string current_target = "Cortex";
+    static std::string current_target = "Head";
     camera.orbit_target = orbit_target_map[current_target];
 
     glm::vec4 clear_color = glm::vec4(0.45f, 0.55f, 0.60f, 1.00f);
@@ -139,9 +139,6 @@ int main() {
         ImGui::SliderFloat("Camera Theta", &camera.orbit_theta, -360.0f, 360.0f, "%.1f units");
         ImGui::SliderFloat("Camera Phi", &camera.orbit_phi, -89.9f, 89.9f, "%.1f units");
 
-
-        
-        
         if (ImGui::Button("Reset Camera")) {
             camera.orbit_radius = 600.0f;
             camera.orbit_theta = 0.0f;
@@ -190,10 +187,11 @@ int main() {
         auto view = camera.GetViewMatrix();
 		auto projection = camera.GetProjectionMatrix();
 
-        cortex.Draw(view, projection, camera.position);
-		refpts.Draw(view, projection);
-		//head.Draw(view, projection, camera.position);
+        //cortex.Draw(view, projection, camera.position);
+		//refpts.Draw(view, projection);
+		head.Draw(view, projection, camera.position);
 
+        
         //
         //
         //glm::mat4 refpts_T = glm::mat4(1.0f);
