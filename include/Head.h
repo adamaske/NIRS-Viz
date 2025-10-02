@@ -5,6 +5,33 @@
 #include "Shader.h"
 #include "Line.h"
 
+struct Edge {
+	unsigned int destination_index;
+	float weight;
+};
+
+struct PairHash {
+	template <class T1, class T2>
+	std::size_t operator () (const std::pair<T1, T2>& p) const {
+		auto h1 = std::hash<T1>{}(p.first);
+		auto h2 = std::hash<T2>{}(p.second);
+		return h1 ^ (h2 << 1);
+	}
+};
+
+using AdjacencyList = std::vector<Edge>;
+using Graph = std::vector<AdjacencyList>;
+using EdgeKey = std::pair<unsigned int, unsigned int>;
+
+struct DijkstraNode {
+	float distance;
+	unsigned int index;
+
+	bool operator>(const DijkstraNode& other) const {
+		return distance > other.distance;
+	}
+};
+
 enum LandmarkType {
 	NAISON,
 	INION,
@@ -32,7 +59,8 @@ public:
 	Shader* line_shader;
 	Line* naison_inion_line;
 	Line* ear_to_ear_line;
-	std::vector<Line*> lines;
+	std::vector<Line*> nz_iz_path;
+	std::vector<Line*> lpa_rpa_path;
 
 
 	// Landmarking
@@ -64,6 +92,8 @@ public:
 	void DrawLandmarks(glm::mat4 view, glm::mat4 proj, glm::vec3 veiw_pos);
 
 	std::unordered_map<LandmarkType, unsigned int> LandmarksToClosestVertex();
-	void ShortestPathOnScalp(unsigned int start_vertex, unsigned int end_vertex);
+	std::vector<unsigned int> ShortestPathOnScalp(const Graph& graph, unsigned int start_index, unsigned int end_index);
+	Graph CreateGraph(unsigned int start_index, unsigned int end_index);
+	bool ValidateGraph(const Graph& graph, int start_index, int end_index, int num_vertices);
 	void GenerateCoordinateSystem();
 };

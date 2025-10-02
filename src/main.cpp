@@ -98,9 +98,9 @@ int main() {
     cortex.transform.Translate(glm::vec3(0, 0, -50.0f));
 	orbit_target_map["Cortex"] = &cortex.transform;
 
-    SNIRF snirf("C:/dev/NIRS-Viz/data/example.snirf");
-    Probe probe(&snirf);
-    orbit_target_map["Probe"] = probe.transform;
+    //SNIRF snirf("C:/dev/NIRS-Viz/data/example.snirf");
+    //Probe probe(&snirf);
+    //orbit_target_map["Probe"] = probe.transform;
 
     ReferencePoints refpts(resource_dir / "Colin/anatomical/refpts.txt", resource_dir / "Colin/anatomical/refpts_labels.txt");
 	orbit_target_map["Reference Points"] = refpts.transform;

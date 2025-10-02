@@ -1,11 +1,12 @@
 #include "Mesh.h"
-#include <filesystem>
-#include <iostream>
-#include <fstream>
 #include <sstream>
-#include <map>
+#include <string>
+#include <vector>
+#include <fstream>
+#include <unordered_map>
+#include <tuple>
 #include <spdlog/spdlog.h>
-
+#include <glm/glm.hpp>
 Mesh::Mesh(const fs::path& obj_filepath)
 {
 	// Read OBJ file directly, 
@@ -53,21 +54,15 @@ void Mesh::Reset() {
     Init();
 }
 
-namespace std {
-    template<> struct hash<Vertex> {
-        size_t operator()(Vertex const& v) const noexcept {
-            size_t h1 = hash<float>()(v.position.x) ^ (hash<float>()(v.position.y) << 1) ^ (hash<float>()(v.position.z) << 2);
-            size_t h2 = hash<float>()(v.normal.x) ^ (hash<float>()(v.normal.y) << 1) ^ (hash<float>()(v.normal.z) << 2);
-            size_t h3 = hash<float>()(v.tex_coords.x) ^ (hash<float>()(v.tex_coords.y) << 1);
-            return h1 ^ h2 ^ h3;
-        }
-    };
-}
 
 bool Mesh::LoadObj(const std::string& filename,
     std::vector<Vertex>& vertices,
     std::vector<unsigned int>& indices)
 {
+    // Clear existing data (good practice)
+    vertices.clear();
+    indices.clear();
+
     std::ifstream file(filename);
     if (!file.is_open()) {
         std::cerr << "Could not open OBJ file: " << filename << std::endl;
@@ -78,7 +73,14 @@ bool Mesh::LoadObj(const std::string& filename,
     std::vector<glm::vec2> texCoords;
     std::vector<glm::vec3> normals;
 
+    // OBJ indices are 1-based, push dummy values at index 0 to align to 1-based indexing easily.
+    positions.emplace_back(0.0f);
+    texCoords.emplace_back(0.0f);
+    normals.emplace_back(0.0f);
+
+    // This map ensures vertex reuse (DEDUPLICATION)
     std::unordered_map<Vertex, unsigned int> uniqueVertices;
+    uniqueVertices.reserve(10000); // Reserve memory for typical mesh size
 
     std::string line;
     while (std::getline(file, line)) {
@@ -88,48 +90,63 @@ bool Mesh::LoadObj(const std::string& filename,
 
         if (type == "v") {
             glm::vec3 pos;
-            ss >> pos.x >> pos.y >> pos.z;
-            positions.push_back(pos);
+            if (ss >> pos.x >> pos.y >> pos.z) {
+                positions.push_back(pos);
+            }
         }
         else if (type == "vt") {
             glm::vec2 uv;
-            ss >> uv.x >> uv.y;
-            texCoords.push_back(uv);
+            if (ss >> uv.x >> uv.y) {
+                texCoords.push_back(uv);
+            }
         }
         else if (type == "vn") {
             glm::vec3 n;
-            ss >> n.x >> n.y >> n.z;
-            normals.push_back(n);
+            if (ss >> n.x >> n.y >> n.z) {
+                normals.push_back(n);
+            }
         }
         else if (type == "f") {
-            std::string vertexStr;
-            for (int i = 0; i < 3; i++) { // assumes triangulated OBJ
-                ss >> vertexStr;
-                std::istringstream vs(vertexStr);
-                std::string vIdx, tIdx, nIdx;
+            std::string vertex_data;
+            for (int i = 0; i < 3; i++) { // Assumes a triangulated OBJ
+                if (!(ss >> vertex_data)) break;
 
-                std::getline(vs, vIdx, '/');
-                std::getline(vs, tIdx, '/');
-                std::getline(vs, nIdx, '/');
+                // Parse the "v/vt/vn" string
+                std::replace(vertex_data.begin(), vertex_data.end(), '/', ' ');
+                std::stringstream vs(vertex_data);
 
-                int vi = std::stoi(vIdx) - 1;
-                int ti = tIdx.empty() ? -1 : std::stoi(tIdx) - 1;
-                int ni = nIdx.empty() ? -1 : std::stoi(nIdx) - 1;
+                // OBJ indices
+                unsigned int vi, ti = 0, ni = 0;
 
+                // Read up to 3 indices. The ti and ni are optional.
+                vs >> vi;
+                if (!(vs >> ti)) ti = 0;
+                if (!(vs >> ni)) ni = 0;
+
+                // --- 1. Assemble the Vertex ---
                 Vertex v{};
-                v.position = positions[vi];
-                if (ti >= 0) v.tex_coords = texCoords[ti];
-                if (ni >= 0) v.normal = normals[ni];
 
+                // Check bounds and assign, using 1-based indexing (vi >= 1)
+                if (vi < positions.size()) v.position = positions[vi];
+
+                // Only assign if texCoords/normals are present in the OBJ file and face definition
+                if (ti > 0 && ti < texCoords.size()) v.tex_coords = texCoords[ti];
+                if (ni > 0 && ni < normals.size()) v.normal = normals[ni];
+
+                // --- 2. Deduplicate/Index ---
                 if (uniqueVertices.count(v) == 0) {
-                    uniqueVertices[v] = static_cast<unsigned int>(vertices.size());
+                    // New unique vertex found: add it and store its index
+                    unsigned int new_index = static_cast<unsigned int>(vertices.size());
+                    uniqueVertices[v] = new_index;
                     vertices.push_back(v);
                 }
 
+                // Add the index to the indices list
                 indices.push_back(uniqueVertices[v]);
             }
         }
     }
 
+    spdlog::info("OBJ Load successful. Vertices: {}, Indices: {}", vertices.size(), indices.size());
     return true;
 }
