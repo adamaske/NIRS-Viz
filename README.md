@@ -1,2 +1,2 @@
-# NeuroVisualizer
+# NIRS-Viz
 
