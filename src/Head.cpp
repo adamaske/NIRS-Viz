@@ -260,9 +260,6 @@ void Head::CastRays()
 	auto nz_iz_direction = glm::normalize(iz - nz);
 	auto lpa_rpa_direction = glm::normalize(rpa - lpa);
 
-	std::vector<unsigned int> nz_iz_rough_path_indices; // Rough path 
-	std::vector<unsigned int> lpa_rpa_rough_path_indices; // Rough path 
-
 	auto nz_iz_midpoint = (nz + iz) / 2.0f;
 	auto lpa_rpa_midpoint = (lpa + rpa) / 2.0f;
 
@@ -306,6 +303,9 @@ void Head::CastRays()
 	}
 
 
+	std::vector<unsigned int> nz_iz_rough_path_indices; 
+	std::vector<unsigned int> lpa_rpa_rough_path_indices;
+
 	spdlog::info("Casting {} rays for Nasion-Inion and {} rays for LPA-RPA", nz_iz_rays.size(), lpa_rpa_rays.size());
 	for (const auto& ray_tuple : nz_iz_rays) {
 
@@ -321,13 +321,10 @@ void Head::CastRays()
 			glm::vec3 v0 = glm::translate(local_matrix, vertices[indices[i + 0]].position)[3];
 			glm::vec3 v1 = glm::translate(local_matrix, vertices[indices[i + 1]].position)[3];
 			glm::vec3 v2 = glm::translate(local_matrix, vertices[indices[i + 2]].position)[3];
-			// We need to turn it into head space
 
-
-			float t; // Intersection distance
+			float t; 
 
 			if (RayIntersectsTriangle(ray_origin, ray_direction, v0, v1, v2, t)) {
-				// Check if this intersection is the closest one so far
 				if (t < best_hit.t_distance) {
 					best_hit.t_distance = t;
 					best_hit.hit_v0 = indices[i + 0];
@@ -449,6 +446,11 @@ void Head::GenerateCoordinateSystem()
 {
 	// Find the cloeset vertices to each landmark
 	CastRays();
+
+	std::vector<unsigned int> nz_iz_rough_path_vert_indices;
+	std::vector<unsigned int> lpa_rpa_rough_path_vert_indices;
+
+
 
 	return;
 
