@@ -91,6 +91,7 @@ public:
 
 	void DrawLandmarks(glm::mat4 view, glm::mat4 proj, glm::vec3 veiw_pos);
 
+	float DIRECTIONAL_STRENGTH = 0.0f;
 	std::unordered_map<LandmarkType, unsigned int> LandmarksToClosestVertex();
 	std::vector<unsigned int> ShortestPathOnScalp(const Graph& graph, unsigned int start_index, unsigned int end_index);
 	Graph CreateGraph(unsigned int start_index, unsigned int end_index);

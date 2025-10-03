@@ -98,6 +98,16 @@ void Head::DrawLandmarks(glm::mat4 view, glm::mat4 proj, glm::vec3 veiw_pos)
 		}
 
 	}
+	ImGui::Text("Geodesic Path Penalties (Ideal Axis: Nasion -> Inion)");
+	ImGui::Separator();
+
+	ImGui::DragFloat("Directional Strength",
+		&DIRECTIONAL_STRENGTH,
+		0.5f, // Speed of dragging
+		0.0f,
+		250.0f,
+		"%.1f");
+
 
 	landmark_shader->Bind();
 
@@ -270,7 +280,8 @@ Graph Head::CreateGraph(unsigned int start_index, unsigned int end_index)
 	const glm::vec3& end_pos = vertices[end_index].position;
 
 	// 2. Calculate the IDEAL vector (the shortcut) and normalize it
-	const glm::vec3 ideal_direction = glm::normalize(end_pos - start_pos);
+	const glm::vec3 ideal_direction = glm::normalize(glm::translate(local_matrix, end_pos)[3] - glm::translate(local_matrix, start_pos)[3]);
+
 	spdlog::info("Start Position: {}", glm::to_string(start_pos));
 	spdlog::info("End Position: {}", glm::to_string(end_pos));
 	spdlog::info("Ideal Direction: {}", glm::to_string(ideal_direction));
@@ -280,41 +291,37 @@ Graph Head::CreateGraph(unsigned int start_index, unsigned int end_index)
 		const glm::vec3& p2 = vertices[idx2].position;
 		return glm::distance(p1, p2);
 	};
+	glm::vec3 N_mid_sagittal = glm::normalize(ideal_direction); // Normal vector of the mid-sagittal plane
+	float K_penalty = DIRECTIONAL_STRENGTH; // Penalty factor for deviating from the ideal direction
 	auto calculate_weighted_cost = [&](unsigned int idx1, unsigned int idx2) -> float {
-		const glm::vec3& p1 = vertices[idx1].position;
-		const glm::vec3& p2 = vertices[idx2].position;
+		// Vertices is assumed to be available via capture [&]
+		const glm::vec3& p1 = glm::translate(local_matrix, vertices[idx1].position)[3];
+		const glm::vec3& p2 = glm::translate(local_matrix, vertices[idx2].position)[3];
 
-		// NOTE: IDEAL_DIRECTION must be calculated once outside this function:
-		// const glm::vec3 IDEAL_DIRECTION = glm::normalize(end_pos - start_pos);
+		// N_mid_sagittal (glm::vec3) and K_penalty (float) 
+		// are assumed to be pre-calculated and available via capture [&]
 
-		// --- Step 1: Calculate Actual Edge Weight (Length) ---
+		// --- Step 1: Actual Edge Weight (Length) ---
 		float actual_distance = glm::distance(p1, p2);
 
-		// --- Step 2: Calculate Alignment ---
-		glm::vec3 edge_vector = glm::normalize(p2 - p1);
+		// --- Step 2: Edge Vector ---
+		glm::vec3 edge_vector = p2 - p1;
 
-		// Alignment is between +1 (perfectly toward end) and -1 (directly away from end).
-		float alignment = glm::dot(edge_vector, ideal_direction);
+		// --- Step 3: Angular Constraint Calculation ---
+		// The dot product measures the projection of the edge vector onto the Normal.
+		// A dot product of 0 means the edge is perpendicular to the Normal (i.e., ON the plane).
+		// A dot product of 1 (or -1) means the edge is parallel to the Normal (i.e., away from the plane).
 
-		// --- Step 3: Calculate the Directional Penalty ---
+		// Normalize the edge vector for a correct dot product (cosine of the angle).
+		glm::vec3 edge_unit_vector = glm::normalize(edge_vector);
 
-		// Penalty Factor: 1 - Alignment
-		// Ranges from 0 (perfectly aligned) to 2 (perfectly opposite)
-		float penalty_factor = 1.0f - alignment;
+		// Calculate the absolute cosine of the angle (measures deviation from the plane).
+		float cos_theta = glm::dot(edge_unit_vector, N_mid_sagittal);
+		float deviation_factor = glm::abs(cos_theta);
 
-		// Define the strength of the penalty (PUNISHMENT_STRENGTH >= 0)
-		// You will need to TUNE this value (start high, e.g., 5.0 to 10.0).
-		const float PUNISHMENT_STRENGTH = 8.0f;
-
-		// Directional Cost = Actual Length * Strength * Penalty Factor
-		float directional_cost = actual_distance * PUNISHMENT_STRENGTH * penalty_factor;
-
-		// --- Step 4: Final Weighted Cost ---
-		// Total Cost = Actual Length + Directional Cost
-
-		// If the edge moves toward the goal (alignment=1), cost is just actual_distance.
-		// If the edge moves away from the goal (alignment=-1), cost is much higher.
-		float weighted_cost = actual_distance + directional_cost;
+		// --- Step 4: Apply Weighted Cost Formula ---
+		// Formula: Weight_new = Weight_geo * (1 + k * |cos(theta)|)
+		float weighted_cost = actual_distance * (1.0f + K_penalty * deviation_factor);
 
 		return weighted_cost;
 		};
