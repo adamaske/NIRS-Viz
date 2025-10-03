@@ -16,7 +16,7 @@ public:
     Transform() {
         SetToIdentity();
 	}
-
+    Transform(glm::vec3 _pos, glm::quat _rot, glm::vec3 _scale);
     glm::vec3 position;
     glm::quat rotation;
     glm::vec3 scale;

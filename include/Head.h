@@ -5,32 +5,6 @@
 #include "Shader.h"
 #include "Line.h"
 
-struct Edge {
-	unsigned int destination_index;
-	float weight;
-};
-
-struct PairHash {
-	template <class T1, class T2>
-	std::size_t operator () (const std::pair<T1, T2>& p) const {
-		auto h1 = std::hash<T1>{}(p.first);
-		auto h2 = std::hash<T2>{}(p.second);
-		return h1 ^ (h2 << 1);
-	}
-};
-
-using AdjacencyList = std::vector<Edge>;
-using Graph = std::vector<AdjacencyList>;
-using EdgeKey = std::pair<unsigned int, unsigned int>;
-
-struct DijkstraNode {
-	float distance;
-	unsigned int index;
-
-	bool operator>(const DijkstraNode& other) const {
-		return distance > other.distance;
-	}
-};
 
 enum LandmarkType {
 	NAISON,
@@ -42,6 +16,12 @@ struct Landmark {
 	LandmarkType type;
 	Transform* transform;
 	glm::vec4 color;
+};
+
+struct Waypoint {
+	unsigned int waypoint_index;
+	unsigned int vertex_index;
+	glm::vec3 position;
 };
 
 class Head {
@@ -61,7 +41,18 @@ public:
 	Line* ear_to_ear_line;
 	std::vector<Line*> nz_iz_path;
 	std::vector<Line*> lpa_rpa_path;
+	void DrawLines(glm::mat4 view, glm::mat4 proj, glm::vec3 veiw_pos);
 
+	float theta_step_size = 10.0f; // degrees
+	float theta_deg = theta_step_size;
+	float ray_distance = 250.0f;
+	
+
+	Mesh* waypoint_mesh;
+	Shader* waypoint_shader;
+	std::vector<Waypoint*> nz_iz_waypoints;
+	std::vector<Waypoint*> lpa_rpa_waypoints;
+	void DrawWaypoints(glm::mat4 view, glm::mat4 proj, glm::vec3 veiw_pos);
 
 	// Landmarking
 	Mesh* landmark_mesh;
@@ -88,13 +79,8 @@ public:
 	};
 
 	void UpdateLandmark(LandmarkType type, const glm::vec3& position);
-
 	void DrawLandmarks(glm::mat4 view, glm::mat4 proj, glm::vec3 veiw_pos);
-
-	float DIRECTIONAL_STRENGTH = 0.0f;
 	std::unordered_map<LandmarkType, unsigned int> LandmarksToClosestVertex();
-	std::vector<unsigned int> ShortestPathOnScalp(const Graph& graph, unsigned int start_index, unsigned int end_index);
-	Graph CreateGraph(unsigned int start_index, unsigned int end_index);
-	bool ValidateGraph(const Graph& graph, int start_index, int end_index, int num_vertices);
+	void CastRays();
 	void GenerateCoordinateSystem();
 };

@@ -1,5 +1,12 @@
 #include "Transform.h"
 
+Transform::Transform(glm::vec3 _pos, glm::quat _rot, glm::vec3 _scale)
+{
+	position = _pos;
+	rotation = _rot;
+	scale = _scale;
+}
+
 void Transform::SetToIdentity()
 {
     position = glm::vec3(0.0f, 0.0f, 0.0f);
