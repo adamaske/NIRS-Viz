@@ -66,7 +66,10 @@ file(GLOB_RECURSE INCS "${INCLUDE_DIR}/*.h")
 file(GLOB_RECURSE SRCS "${SOURCE_DIR}/*.cpp")
 
 add_executable( ${PROJECT_NAME} ${SRCS} ${IMGUI_SOURCES} vendor/glad/src/glad.c )
-
+target_compile_options(${PROJECT_NAME} PRIVATE
+    # Applies /utf-8 ONLY if the C++ compiler is MSVC
+    $<$<CXX_COMPILER_ID:MSVC>:/utf-8>
+)
 # Include the subdirectory and use the target HighFive.
 #add_subdirectory(${VENDOR_DIR}/HighFive INTERFACE)
 

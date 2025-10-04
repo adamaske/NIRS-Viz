@@ -1,19 +1,34 @@
-#pragma once
+#include "Raycaster.h"
+#include <glm/gtc/quaternion.hpp>
 
-#include <glm/glm.hpp>
-struct RayHit {
-    float t_distance = std::numeric_limits<float>::max();
-    unsigned int hit_v0 = 0, hit_v1 = 0, hit_v2 = 0; // Vertices of the hit triangle
-};
-// RayIntersectsTriangle: Möller–Trumbore algorithm implementation.
-// Checks if a ray (origin, direction) intersects a triangle (v0, v1, v2).
-// Returns true if hit, and outputs the distance 't' along the ray.
+std::vector<Ray> GenerateSweepingArchRays(
+    const glm::vec3& origin,
+    const glm::vec3& direction,
+    const glm::vec3& rotation_axis,
+    const float& distance,
+    const float& theta_min,
+    const float& theta_max,
+    const float& theta_stepsize)
+{
+    std::vector<Ray> rays;
+
+    for (float theta = theta_min; theta < theta_max; theta += theta_stepsize) {
+
+        auto rotation_quat = glm::angleAxis(glm::radians(theta), rotation_axis);
+        auto ray_direction = rotation_quat * direction;
+        auto endpoint = origin + ray_direction * distance;
+        rays.push_back(Ray{ origin, endpoint });
+    }
+
+    return rays;
+}
+
 bool RayIntersectsTriangle(
-    const glm::vec3 & origin,
-    const glm::vec3 & direction,
-    const glm::vec3 & v0,
-    const glm::vec3 & v1,
-    const glm::vec3 & v2,
+    const glm::vec3& origin,
+    const glm::vec3& direction,
+    const glm::vec3& v0,
+    const glm::vec3& v1,
+    const glm::vec3& v2,
     float& t)
 {
     // Epsilon to handle floating point errors

@@ -5,7 +5,8 @@
 #include "Shader.h"
 #include "Line.h"
 
-
+#include "DjikstraSolver.h"
+#include "Raycaster.h"
 enum LandmarkType {
 	NAISON,
 	INION,
@@ -26,28 +27,37 @@ struct Waypoint {
 
 class Head {
 public:
-
-
-	Shader* shader;
-	Mesh* scalp_mesh;
-	Transform* transform;
-
 	Head();
 	~Head();
+
 	void Draw(glm::mat4 view, glm::mat4 proj, glm::vec3 veiw_pos);
 
+	Transform* transform;
+	Shader* scalp_shader;
+	Mesh* scalp_mesh;
+	Graph scalp_mesh_graph;
+	void DrawScalp(glm::mat4 view, glm::mat4 proj, glm::vec3 view_pos);
+
 	Shader* line_shader;
+
+	bool draw_landmark_lines = true;
 	Line* naison_inion_line;
 	Line* ear_to_ear_line;
-	std::vector<Line*> nz_iz_path;
-	std::vector<Line*> lpa_rpa_path;
-	void DrawLines(glm::mat4 view, glm::mat4 proj, glm::vec3 veiw_pos);
+	void DrawLandmarkLines(glm::mat4 view, glm::mat4 proj, glm::vec3 veiw_pos);
+
 
 	float theta_step_size = 10.0f; // degrees
 	float theta_deg = theta_step_size;
 	float ray_distance = 250.0f;
-	
+	std::vector<Ray> nz_iz_rays;
+	std::vector<Ray> lpa_rpa_rays;
+	bool draw_rays = true;
 
+	std::vector<Line*> nz_iz_path;
+	std::vector<Line*> lpa_rpa_path;
+	void DrawRays(glm::mat4 view, glm::mat4 proj, glm::vec3 veiw_pos);
+
+	bool draw_waypoints;
 	Mesh* waypoint_mesh;
 	Shader* waypoint_shader;
 	std::vector<Waypoint*> nz_iz_waypoints;
@@ -78,9 +88,15 @@ public:
 		{ LandmarkType::RPA, "LPA" }, 
 	};
 
-	void UpdateLandmark(LandmarkType type, const glm::vec3& position);
+	std::unordered_map<LandmarkType, unsigned int> lm_closest_vert_idx_map;
 	void DrawLandmarks(glm::mat4 view, glm::mat4 proj, glm::vec3 veiw_pos);
-	std::unordered_map<LandmarkType, unsigned int> LandmarksToClosestVertex();
+	void UpdateLandmark(LandmarkType type, const glm::vec3& position);
+	void LandmarksToClosestVertex();
+
+	void GenerateRays();
 	void CastRays();
+
+	std::vector<unsigned int> FindFinePath(std::vector<unsigned int> rough_path);
+
 	void GenerateCoordinateSystem();
 };
