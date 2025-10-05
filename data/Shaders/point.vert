@@ -8,5 +8,4 @@ uniform mat4 projection;
 void main()
 {
     gl_Position = projection * view * model * vec4(aPos, 1.0);
-    gl_PointSize = 8.0; // size in pixels; can also be set dynamically
 }

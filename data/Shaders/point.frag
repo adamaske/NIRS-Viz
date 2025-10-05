@@ -1,7 +1,6 @@
 #version 440 core
-
+uniform vec4 pointColor;
 out vec4 FragColor;
-
 void main()
 {
     // Make point a circle
@@ -9,5 +8,5 @@ void main()
     if (dot(coord, coord) > 1.0)
         discard;
 
-    FragColor = vec4(1.0, 0.2, 0.2, 1.0); // red sphere
+    FragColor = pointColor; 
 }

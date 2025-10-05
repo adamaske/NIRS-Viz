@@ -4,6 +4,7 @@
 #include "Mesh.h"
 #include "Shader.h"
 #include "Line.h"
+#include "PointRenderer.h"
 
 #include "DjikstraSolver.h"
 #include "Raycaster.h"
@@ -36,35 +37,53 @@ public:
 	Shader* scalp_shader;
 	Mesh* scalp_mesh;
 	Graph scalp_mesh_graph;
+	std::vector<glm::vec3> hs_vertices; // Vertices in head space
 	void DrawScalp(glm::mat4 view, glm::mat4 proj, glm::vec3 view_pos);
 
 	Shader* line_shader;
-
 	bool draw_landmark_lines = true;
 	Line* naison_inion_line;
 	Line* ear_to_ear_line;
 	void DrawLandmarkLines(glm::mat4 view, glm::mat4 proj, glm::vec3 veiw_pos);
 
-
+	// Raycasts
+	bool draw_rays = true;
 	float theta_step_size = 10.0f; // degrees
 	float theta_deg = theta_step_size;
 	float ray_distance = 250.0f;
 	std::vector<Ray> nz_iz_rays;
 	std::vector<Ray> lpa_rpa_rays;
-	bool draw_rays = true;
-
-	std::vector<Line*> nz_iz_path;
-	std::vector<Line*> lpa_rpa_path;
+	std::vector<Line*> nz_iz_ray_lines;
+	std::vector<Line*> lpa_rpa_ray_lines;
 	void DrawRays(glm::mat4 view, glm::mat4 proj, glm::vec3 veiw_pos);
 
+	// Landmark-To-Landmark Paths
+	bool draw_paths = true;
+	std::vector<Line*> nz_iz_path_lines;
+	std::vector<Line*> lpa_rpa_path_lines;
+	std::vector<Line*> horizontal_arc_path_lines;
+
+	// Rough path from raycasts
+	std::vector<unsigned int> nz_iz_rough_path_indices;
+	std::vector<unsigned int> nz_iz_fine_path_indices;
+
+	std::vector<unsigned int> lpa_rpa_rough_path_indices;
+	std::vector<unsigned int> lpa_rpa_fine_path_indices;
+
+	std::vector<unsigned int> horizontal_arc_rough_path_indices;
+	std::vector<unsigned int> horizontal_arc_fine_path_indices;
+	void DrawPaths(glm::mat4 view, glm::mat4 proj, glm::vec3 veiw_pos);
+	void UpdatePathLines();
+
+
 	bool draw_waypoints;
-	Mesh* waypoint_mesh;
-	Shader* waypoint_shader;
-	std::vector<Waypoint*> nz_iz_waypoints;
-	std::vector<Waypoint*> lpa_rpa_waypoints;
-	void DrawWaypoints(glm::mat4 view, glm::mat4 proj, glm::vec3 veiw_pos);
+	PointRenderer* nz_iz_waypoint_renderer;
+	PointRenderer* lpa_rpa_waypoint_renderer;
+	PointRenderer* horizontal_arc_waypoint_renderer;
+	void DrawWaypoints(const glm::mat4& view, const glm::mat4& proj);
 
 	// Landmarking
+	bool draw_landmarks = true;
 	Mesh* landmark_mesh;
 	Shader* landmark_shader;
 	bool render_landmarks = true;
@@ -84,8 +103,8 @@ public:
 	std::unordered_map<LandmarkType, std::string> landmark_labels = { 
 		{ LandmarkType::NAISON, "Naison" }, 
 		{ LandmarkType::INION, "Inion" }, 
-		{ LandmarkType::LPA, "RPA" }, 
-		{ LandmarkType::RPA, "LPA" }, 
+		{ LandmarkType::LPA, "LPA" }, 
+		{ LandmarkType::RPA, "RPA" }, 
 	};
 
 	std::unordered_map<LandmarkType, unsigned int> lm_closest_vert_idx_map;
@@ -95,8 +114,13 @@ public:
 
 	void GenerateRays();
 	void CastRays();
-
 	std::vector<unsigned int> FindFinePath(std::vector<unsigned int> rough_path);
-
 	void GenerateCoordinateSystem();
+
+	std::unordered_map<std::string, glm::vec3> point_label_map;
+	bool draw_refpts = true;
+	PointRenderer* refpts_renderer;
+
+	void NZFirstMethod();
+	void LPASecondMethod();
 };

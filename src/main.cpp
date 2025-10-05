@@ -20,7 +20,6 @@
 #include "Cortex.h"
 #include "Snirf.h"
 #include "Probe.h"
-#include "ReferencePoints.h"
 #include "Head.h"
 
 namespace fs = std::filesystem;
@@ -92,7 +91,7 @@ int main() {
 
     Head head = Head();
     orbit_target_map["Head"] = head.transform;
-	head.transform->Scale(glm::vec3(100.0f, 100.0f, 100.0f));
+	//head.transform->Scale(glm::vec3(100.0f, 100.0f, 100.0f));
 	
     Cortex cortex = Cortex();
     cortex.transform.Translate(glm::vec3(0, 0, -50.0f));
@@ -101,9 +100,6 @@ int main() {
     //SNIRF snirf("C:/dev/NIRS-Viz/data/example.snirf");
     //Probe probe(&snirf);
     //orbit_target_map["Probe"] = probe.transform;
-
-    ReferencePoints refpts(resource_dir / "Colin/anatomical/refpts.txt", resource_dir / "Colin/anatomical/refpts_labels.txt");
-	orbit_target_map["Reference Points"] = refpts.transform;
 
     static std::string current_target = "Head";
     camera.orbit_target = orbit_target_map[current_target];
