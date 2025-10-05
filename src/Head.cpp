@@ -163,25 +163,6 @@ void Head::DrawPaths(glm::mat4 view, glm::mat4 proj, glm::vec3 veiw_pos)
 	}
 }
 
-void Head::UpdatePathLines()
-{
-	std::for_each(nz_iz_path_lines.begin(), nz_iz_path_lines.end(), [](Line* line) {delete line; });
-	nz_iz_path_lines.clear();
-	for (size_t i = 0; i < nz_iz_fine_path_indices.size() - 1; ++i) {
-		const auto& p1 = hs_vertices[nz_iz_fine_path_indices[i]];
-		const auto& p2 = hs_vertices[nz_iz_fine_path_indices[i + 1]];
-		nz_iz_path_lines.push_back(new Line(p1, p2, glm::vec3(1.0f, 0.0f, 0.0f), 3.0f, line_shader));
-	}
-
-	std::for_each(lpa_rpa_path_lines.begin(), lpa_rpa_path_lines.end(), [](Line* line) {delete line; });
-	lpa_rpa_path_lines.clear();
-	for (size_t i = 0; i < lpa_rpa_fine_path_indices.size() - 1; ++i) {
-		const auto& p1 = hs_vertices[lpa_rpa_fine_path_indices[i]];
-		const auto& p2 = hs_vertices[lpa_rpa_fine_path_indices[i + 1]];
-		lpa_rpa_path_lines.push_back(new Line(p1, p2, glm::vec3(1.0f, 0.0f, 0.0f), 3.0f, line_shader));
-	}
-}
-
 void Head::DrawWaypoints(const glm::mat4& view, const glm::mat4& proj)
 {
 	nz_iz_waypoint_renderer->Draw(view, proj);
@@ -240,7 +221,6 @@ void Head::UpdateLandmark(LandmarkType type, const glm::vec3& position) {
 
 	
 }
-
 
 void Head::LandmarksToClosestVertex()
 {
@@ -329,16 +309,15 @@ void Head::GenerateRays()
 	}
 }
 
-void Head::CastRays()
+std::vector<unsigned int> Head::CastRays(std::vector<Ray> rays, PointRenderer* wp_render)
 {
-	const auto& vertices = scalp_mesh->vertices;
 	const auto& indices = scalp_mesh->indices;
+	const auto& vertices = scalp_mesh->vertices;
 	const auto& local_matrix = transform->GetMatrix();
-	
-	nz_iz_rough_path_indices.clear();
-	lpa_rpa_rough_path_indices.clear();
 
-	for (const auto& ray : nz_iz_rays) {
+	std::vector<unsigned int> path;
+
+	for (const auto& ray : rays) {
 
 		glm::vec3 ray_origin = ray.origin;
 		glm::vec3 ray_endpoint = ray.endpoint;
@@ -346,14 +325,12 @@ void Head::CastRays()
 
 		RayHit best_hit;
 
-		// Iterate through every triangle in the mesh (Brute-Force)
 		for (unsigned int i = 0; i < indices.size(); i += 3) {
-			// Get the three vertices of the current triangle
-			glm::vec3 v0 = glm::translate(local_matrix, vertices[indices[i + 0]].position)[3];
-			glm::vec3 v1 = glm::translate(local_matrix, vertices[indices[i + 1]].position)[3];
-			glm::vec3 v2 = glm::translate(local_matrix, vertices[indices[i + 2]].position)[3];
+			glm::vec3 v0 = hs_vertices[indices[i + 0]];
+			glm::vec3 v1 = hs_vertices[indices[i + 1]];
+			glm::vec3 v2 = hs_vertices[indices[i + 2]];
 
-			float t; 
+			float t;
 
 			if (RayIntersectsTriangle(ray_origin, ray_direction, v0, v1, v2, t)) {
 				if (t < best_hit.t_distance) {
@@ -365,11 +342,10 @@ void Head::CastRays()
 			}
 		}
 
-		// --- Process the best hit for this ray ---
 		if (best_hit.t_distance != std::numeric_limits<float>::max()) {
 
 			glm::vec3 intersection_point = ray_origin + ray_direction * best_hit.t_distance;
-			
+
 			unsigned int closest_vertex_index = best_hit.hit_v0;
 			float min_dist_sq = glm::distance2(intersection_point, hs_vertices[best_hit.hit_v0]);
 
@@ -387,81 +363,22 @@ void Head::CastRays()
 			}
 
 			// Add this closest vertex as a rough waypoint
-			nz_iz_rough_path_indices.push_back(closest_vertex_index);
-		}
-	}
-	for (const auto& ray : lpa_rpa_rays) {
-
-		glm::vec3 ray_origin = ray.origin;
-		glm::vec3 ray_endpoint = ray.endpoint;
-		glm::vec3 ray_direction = glm::normalize(ray_endpoint - ray_origin);
-
-		RayHit best_hit;
-
-		// Iterate through every triangle in the mesh (Brute-Force)
-		for (unsigned int i = 0; i < indices.size(); i += 3) {
-			// Get the three vertices of the current triangle
-			glm::vec3 v0 = glm::translate(local_matrix, vertices[indices[i + 0]].position)[3];
-			glm::vec3 v1 = glm::translate(local_matrix, vertices[indices[i + 1]].position)[3];
-			glm::vec3 v2 = glm::translate(local_matrix, vertices[indices[i + 2]].position)[3];
-			// We need to turn it into head space
-
-
-			float t; // Intersection distance
-
-			if (RayIntersectsTriangle(ray_origin, ray_direction, v0, v1, v2, t)) {
-				// Check if this intersection is the closest one so far
-				if (t < best_hit.t_distance) {
-					best_hit.t_distance = t;
-					best_hit.hit_v0 = indices[i + 0];
-					best_hit.hit_v1 = indices[i + 1];
-					best_hit.hit_v2 = indices[i + 2];
-				}
-			}
-		}
-
-		// --- Process the best hit for this ray ---
-		if (best_hit.t_distance != std::numeric_limits<float>::max()) {
-
-			// Calculate the intersection point in world space
-			glm::vec3 intersection_point = ray_origin + ray_direction * best_hit.t_distance;
-
-			// Find the index of the vertex closest to the intersection point
-			unsigned int closest_vertex_index = best_hit.hit_v0;
-			float min_dist_sq = glm::distance2(intersection_point, hs_vertices[best_hit.hit_v0]);
-
-			// Check v1
-			float dist_sq_v1 = glm::distance2(intersection_point, hs_vertices[best_hit.hit_v1]);
-			if (dist_sq_v1 < min_dist_sq) {
-				min_dist_sq = dist_sq_v1;
-				closest_vertex_index = best_hit.hit_v1;
-			}
-
-			// Check v2
-			float dist_sq_v2 = glm::distance2(intersection_point, hs_vertices[best_hit.hit_v2]);
-			if (dist_sq_v2 < min_dist_sq) {
-				closest_vertex_index = best_hit.hit_v2;
-			}
-
-			// Add this closest vertex as a rough waypoint
-			lpa_rpa_rough_path_indices.push_back(closest_vertex_index);
+			path.push_back(closest_vertex_index);
 		}
 	}
 
-	nz_iz_waypoint_renderer->Clear();
-	for (unsigned int i = 0; i < nz_iz_rough_path_indices.size(); i++) {
-		nz_iz_waypoint_renderer->InsertPoint(hs_vertices[nz_iz_rough_path_indices[i]]);
+	// Update Waypoint Renderer
+	wp_render->Clear();
+	for (unsigned int i = 0; i < path.size(); i++) {
+		wp_render->InsertPoint(hs_vertices[path[i]]);
 	}
-	lpa_rpa_waypoint_renderer->Clear();
-	for (unsigned int i = 0; i < lpa_rpa_rough_path_indices.size(); i++) {
-		nz_iz_waypoint_renderer->InsertPoint(hs_vertices[lpa_rpa_rough_path_indices[i]]);
-	}
+
+	return path;
 }
 
 std::vector<unsigned int> Head::FindFinePath(std::vector<unsigned int> rough_path)
 {
 	std::vector<unsigned int> fine_path;
-	
 
 	for (size_t i = 0; i < rough_path.size() - 1; ++i) {
 		auto segment = DjikstraShortestPath(scalp_mesh_graph, rough_path[i], rough_path[i + 1]);
@@ -502,26 +419,38 @@ void Head::GenerateCoordinateSystem()
 		}
 		closest_vert_ind_map[keys[i]] = closest_vert_index;
 	}
-	//First Arc
+	//
 	horizontal_arc_rough_path_indices = { closest_vert_ind_map["FpZ"], closest_vert_ind_map["T3"], closest_vert_ind_map["Oz"], closest_vert_ind_map["T4"],   closest_vert_ind_map["FpZ"] };
 	horizontal_arc_fine_path_indices = FindFinePath(horizontal_arc_rough_path_indices);
 
-	for (size_t i = 0; i < horizontal_arc_fine_path_indices.size() - 1; ++i) {
-		const auto& p1 = hs_vertices[horizontal_arc_fine_path_indices[i]];
-		const auto& p2 = hs_vertices[horizontal_arc_fine_path_indices[i + 1]];
-		horizontal_arc_path_lines.push_back(new Line(p1, p2, glm::vec3(1.0f, 0.0f, 0.0f), 3.0f, line_shader));
-	}
+	UpdatePathLines(&horizontal_arc_path_lines, horizontal_arc_fine_path_indices, glm::vec3(1, 0, 0), 3.0f);
 
 	auto labels = std::vector<std::string>{ "Fp1", "F7", "T5", "O1", "02", "T6", "F8", "Fp2"};
 	auto percentages = std::vector<float>{ 0.05, 0.15, 0.35, 0.45, 0.55, 0.65, 0.85, 0.95};
+	GetReferencePointsAlongPath(horizontal_arc_fine_path_indices, labels, percentages, refpts_renderer);
+}
 
+void Head::UpdatePathLines(std::vector<Line*>* old_lines, const std::vector<unsigned int>& new_indcies, const glm::vec3 color, const float& thickness) {
+	std::for_each(old_lines->begin(), old_lines->end(), [](Line* line) {delete line; });
+	old_lines->clear();
+	for (size_t i = 0; i < new_indcies.size() - 1; ++i) {
+		const auto& p1 = hs_vertices[new_indcies[i]];
+		const auto& p2 = hs_vertices[new_indcies[i + 1]];
+		old_lines->push_back(new Line(p1, p2, glm::vec3(1.0f, 0.0f, 0.0f), 3.0f, line_shader));
+	}
+}
+
+void Head::GetReferencePointsAlongPath( const std::vector<unsigned int>& fine_path_indices, 
+										const std::vector<std::string>& labels, 
+										const std::vector<float>& percentages, 
+										PointRenderer* renderer)
+{
 	std::vector<float> cumulative_distances;
 	float total_distance = 0.0f;
-
 	cumulative_distances.push_back(0.0f);
 
-	for (size_t i = 0; i < horizontal_arc_fine_path_indices.size() - 1; i++) {
-		float segment_dist = glm::distance(hs_vertices[horizontal_arc_fine_path_indices[i]], hs_vertices[horizontal_arc_fine_path_indices[i + 1]]);
+	for (size_t i = 0; i < fine_path_indices.size() - 1; i++) {
+		float segment_dist = glm::distance(hs_vertices[fine_path_indices[i]], hs_vertices[fine_path_indices[i + 1]]);
 		total_distance += segment_dist;
 		cumulative_distances.push_back(total_distance);
 	}
@@ -533,7 +462,7 @@ void Head::GenerateCoordinateSystem()
 		return total_distance * percentage;
 	};
 
-	// Find closest vertices to these points
+
 	for (size_t i = 0; i < labels.size(); i++)
 	{
 		float target_distance = get_distance_by_percentage(percentages[i]);
@@ -541,17 +470,17 @@ void Head::GenerateCoordinateSystem()
 
 		if (percentages[i] == 0.0f) {
 
-			point = hs_vertices[horizontal_arc_fine_path_indices.front()];
+			point = hs_vertices[fine_path_indices.front()];
 
-			refpts_renderer->InsertPoint(point);
+			renderer->InsertPoint(point);
 			point_label_map[labels[i]] = point;
 			continue;
 		}
 
 		if (percentages[i] == 1.0f) {
-			point = hs_vertices[horizontal_arc_fine_path_indices.back()];
+			point = hs_vertices[fine_path_indices.back()];
 
-			refpts_renderer->InsertPoint(point);
+			renderer->InsertPoint(point);
 			point_label_map[labels[i]] = point;
 			continue;
 		}
@@ -564,18 +493,16 @@ void Head::GenerateCoordinateSystem()
 				float remaining_distance = target_distance - start_dist;
 				float ratio = remaining_distance / segment_length;
 
-				glm::vec3 v_start = hs_vertices[horizontal_arc_fine_path_indices[j]];
-				glm::vec3 v_end = hs_vertices[horizontal_arc_fine_path_indices[j + 1]];
+				glm::vec3 v_start = hs_vertices[fine_path_indices[j]];
+				glm::vec3 v_end = hs_vertices[fine_path_indices[j + 1]];
 
 				point = glm::mix(v_start, v_end, ratio);
 				point_label_map[labels[i]] = point;
-				refpts_renderer->InsertPoint(point);
+				renderer->InsertPoint(point);
 				break;
 			}
 		}
 	}
-	
-
 }
 
 
@@ -610,62 +537,7 @@ void Head::NZFirstMethod()
 	}
 
 	// Cast Rays
-	nz_iz_rough_path_indices.clear();
-	for (const auto& ray : nz_iz_rays) {
-
-		glm::vec3 ray_origin = ray.origin;
-		glm::vec3 ray_endpoint = ray.endpoint;
-		glm::vec3 ray_direction = glm::normalize(ray_endpoint - ray_origin);
-
-		RayHit best_hit;
-
-		for (unsigned int i = 0; i < indices.size(); i += 3) {
-			glm::vec3 v0 = glm::translate(local_matrix, vertices[indices[i + 0]].position)[3];
-			glm::vec3 v1 = glm::translate(local_matrix, vertices[indices[i + 1]].position)[3];
-			glm::vec3 v2 = glm::translate(local_matrix, vertices[indices[i + 2]].position)[3];
-
-			float t;
-
-			if (RayIntersectsTriangle(ray_origin, ray_direction, v0, v1, v2, t)) {
-				if (t < best_hit.t_distance) {
-					best_hit.t_distance = t;
-					best_hit.hit_v0 = indices[i + 0];
-					best_hit.hit_v1 = indices[i + 1];
-					best_hit.hit_v2 = indices[i + 2];
-				}
-			}
-		}
-
-		if (best_hit.t_distance != std::numeric_limits<float>::max()) {
-
-			glm::vec3 intersection_point = ray_origin + ray_direction * best_hit.t_distance;
-
-			unsigned int closest_vertex_index = best_hit.hit_v0;
-			float min_dist_sq = glm::distance2(intersection_point, hs_vertices[best_hit.hit_v0]);
-
-			// Check v1
-			float dist_sq_v1 = glm::distance2(intersection_point, hs_vertices[best_hit.hit_v1]);
-			if (dist_sq_v1 < min_dist_sq) {
-				min_dist_sq = dist_sq_v1;
-				closest_vertex_index = best_hit.hit_v1;
-			}
-
-			// Check v2
-			float dist_sq_v2 = glm::distance2(intersection_point, hs_vertices[best_hit.hit_v2]);
-			if (dist_sq_v2 < min_dist_sq) {
-				closest_vertex_index = best_hit.hit_v2;
-			}
-
-			// Add this closest vertex as a rough waypoint
-			nz_iz_rough_path_indices.push_back(closest_vertex_index);
-		}
-	}
-
-	// Update Waypoint Renderer
-	nz_iz_waypoint_renderer->Clear();
-	for (unsigned int i = 0; i < nz_iz_rough_path_indices.size(); i++) {
-		nz_iz_waypoint_renderer->InsertPoint(hs_vertices[nz_iz_rough_path_indices[i]]);
-	}
+	nz_iz_rough_path_indices = CastRays(nz_iz_rays, nz_iz_waypoint_renderer);
 
 	// Find Fine Path
 	std::vector<unsigned int> nz_iz_rough_path;
@@ -678,76 +550,15 @@ void Head::NZFirstMethod()
 	nz_iz_fine_path_indices = FindFinePath(nz_iz_rough_path);
 
 	// Update Path Lines
-	std::for_each(nz_iz_path_lines.begin(), nz_iz_path_lines.end(), [](Line* line) {delete line; });
-	nz_iz_path_lines.clear();
-	for (size_t i = 0; i < nz_iz_fine_path_indices.size() - 1; ++i) {
-		const auto& p1 = hs_vertices[nz_iz_fine_path_indices[i]];
-		const auto& p2 = hs_vertices[nz_iz_fine_path_indices[i + 1]];
-		nz_iz_path_lines.push_back(new Line(p1, p2, glm::vec3(1.0f, 0.0f, 0.0f), 3.0f, line_shader));
-	}
+	UpdatePathLines(&nz_iz_path_lines, nz_iz_fine_path_indices, glm::vec3(1.0f, 0.0f, 0.0f), 3.0f);
 
-	std::vector<float> cumulative_distances;
-	float total_distance = 0.0f;
-
-	cumulative_distances.push_back(0.0f);
-
-	for (size_t i = 0; i < nz_iz_fine_path_indices.size() - 1; i++) {
-		float segment_dist = glm::distance(hs_vertices[nz_iz_fine_path_indices[i]], hs_vertices[nz_iz_fine_path_indices[i + 1]]);
-		total_distance += segment_dist;
-		cumulative_distances.push_back(total_distance);
-	}
-
-	auto get_distance_by_percentage = [total_distance](float percentage) -> float {
-		if (percentage < 0.0f) percentage = 0.0f;
-		if (percentage > 1.0f) percentage = 1.0f;
-
-		return total_distance * percentage;
-		};
+	// Reset refpts
 	refpts_renderer->Clear();
 	point_label_map.clear();
+
 	std::vector<std::string> labels = { "Nz", "FpZ", "Fz", "Cz", "Pz", "Oz", "Iz" };
 	std::vector<float> percentages = { 0.0f, 0.10f, 0.30f, 0.50f, 0.70f, 0.90f, 1.0f };
-	for (size_t i = 0; i < labels.size(); i++)
-	{
-		float target_distance = get_distance_by_percentage(percentages[i]);
-		glm::vec3 point(0, 0, 0);
-
-		if (percentages[i] == 0.0f) {
-
-			point = hs_vertices[nz_iz_fine_path_indices.front()];
-
-			refpts_renderer->InsertPoint(point);
-			point_label_map[labels[i]] = point;
-			continue;
-		}
-
-		if (percentages[i] == 1.0f) {
-			point = hs_vertices[nz_iz_fine_path_indices.back()];
-
-			refpts_renderer->InsertPoint(point);
-			point_label_map[labels[i]] = point;
-			continue;
-		}
-
-		for (size_t j = 0; j < cumulative_distances.size() - 1; j++) {
-			if (target_distance >= cumulative_distances[j] && target_distance <= cumulative_distances[j + 1]) {
-
-				float start_dist = cumulative_distances[j];
-				float segment_length = cumulative_distances[j + 1] - cumulative_distances[j];
-				float remaining_distance = target_distance - start_dist;
-				float ratio = remaining_distance / segment_length;
-
-				glm::vec3 v_start = hs_vertices[nz_iz_fine_path_indices[j]];
-				glm::vec3 v_end = hs_vertices[nz_iz_fine_path_indices[j + 1]];
-
-				point = glm::mix(v_start, v_end, ratio);
-				point_label_map[labels[i]] = point;
-				refpts_renderer->InsertPoint(point);
-				break;
-			}
-		}
-	}
-
+	GetReferencePointsAlongPath(nz_iz_fine_path_indices, labels, percentages, refpts_renderer);
 }
 
 void Head::LPASecondMethod()
@@ -755,11 +566,11 @@ void Head::LPASecondMethod()
 	const auto& vertices = scalp_mesh->vertices;
 	const auto& indices = scalp_mesh->indices;
 	const auto& local_matrix = transform->GetMatrix();
-
-	auto cz_position = point_label_map["Cz"];
 	const auto& lpa = vertices[lm_closest_vert_idx_map[LPA]].position;
 	const auto& rpa = vertices[lm_closest_vert_idx_map[RPA]].position;
 
+
+	const auto& cz_position = point_label_map["Cz"];
 	const glm::vec3& lpa_rpa_midpoint = glm::vec3((lpa + rpa) / 2.0f);
 	const glm::vec3& lpa_rpa_direction = glm::normalize(rpa - lpa);
 	const glm::vec3& cz = glm::vec3(lpa_rpa_midpoint.x, cz_position.y, cz_position.z);
@@ -785,71 +596,7 @@ void Head::LPASecondMethod()
 	}
 
 	// Cast Rays
-	lpa_rpa_rough_path_indices.clear();
-
-
-	for (const auto& ray : lpa_rpa_rays) {
-
-		glm::vec3 ray_origin = ray.origin;
-		glm::vec3 ray_endpoint = ray.endpoint;
-		glm::vec3 ray_direction = glm::normalize(ray_endpoint - ray_origin);
-
-		RayHit best_hit;
-
-		// Iterate through every triangle in the mesh (Brute-Force)
-		for (unsigned int i = 0; i < indices.size(); i += 3) {
-			// Get the three vertices of the current triangle
-			glm::vec3 v0 = glm::translate(local_matrix, vertices[indices[i + 0]].position)[3];
-			glm::vec3 v1 = glm::translate(local_matrix, vertices[indices[i + 1]].position)[3];
-			glm::vec3 v2 = glm::translate(local_matrix, vertices[indices[i + 2]].position)[3];
-			// We need to turn it into head space
-
-
-			float t; // Intersection distance
-
-			if (RayIntersectsTriangle(ray_origin, ray_direction, v0, v1, v2, t)) {
-				// Check if this intersection is the closest one so far
-				if (t < best_hit.t_distance) {
-					best_hit.t_distance = t;
-					best_hit.hit_v0 = indices[i + 0];
-					best_hit.hit_v1 = indices[i + 1];
-					best_hit.hit_v2 = indices[i + 2];
-				}
-			}
-		}
-
-		// --- Process the best hit for this ray ---
-		if (best_hit.t_distance != std::numeric_limits<float>::max()) {
-
-			// Calculate the intersection point in world space
-			glm::vec3 intersection_point = ray_origin + ray_direction * best_hit.t_distance;
-
-			// Find the index of the vertex closest to the intersection point
-			unsigned int closest_vertex_index = best_hit.hit_v0;
-			float min_dist_sq = glm::distance2(intersection_point, hs_vertices[best_hit.hit_v0]);
-
-			// Check v1
-			float dist_sq_v1 = glm::distance2(intersection_point, hs_vertices[best_hit.hit_v1]);
-			if (dist_sq_v1 < min_dist_sq) {
-				min_dist_sq = dist_sq_v1;
-				closest_vertex_index = best_hit.hit_v1;
-			}
-
-			// Check v2
-			float dist_sq_v2 = glm::distance2(intersection_point, hs_vertices[best_hit.hit_v2]);
-			if (dist_sq_v2 < min_dist_sq) {
-				closest_vertex_index = best_hit.hit_v2;
-			}
-
-			// Add this closest vertex as a rough waypoint
-			lpa_rpa_rough_path_indices.push_back(closest_vertex_index);
-		}
-	}
-
-	lpa_rpa_waypoint_renderer->Clear();
-	for (unsigned int i = 0; i < lpa_rpa_rough_path_indices.size(); i++) {
-		nz_iz_waypoint_renderer->InsertPoint(hs_vertices[lpa_rpa_rough_path_indices[i]]);
-	}
+	lpa_rpa_rough_path_indices = CastRays(lpa_rpa_rays, lpa_rpa_waypoint_renderer);
 
 	// Find Fine Path
 	std::vector<unsigned int> lpa_rpa_rough_path;
@@ -862,72 +609,9 @@ void Head::LPASecondMethod()
 	lpa_rpa_fine_path_indices = FindFinePath(lpa_rpa_rough_path);
 
 	// Update Path Lines
-	std::for_each(lpa_rpa_path_lines.begin(), lpa_rpa_path_lines.end(), [](Line* line) {delete line; });
-	lpa_rpa_path_lines.clear();
-	for (size_t i = 0; i < lpa_rpa_fine_path_indices.size() - 1; ++i) {
-		const auto& p1 = hs_vertices[lpa_rpa_fine_path_indices[i]];
-		const auto& p2 = hs_vertices[lpa_rpa_fine_path_indices[i + 1]];
-		lpa_rpa_path_lines.push_back(new Line(p1, p2, glm::vec3(1.0f, 0.0f, 0.0f), 3.0f, line_shader));
-	}
-	std::vector<float> cumulative_distances;
-	float total_distance = 0.0f;
-
-	cumulative_distances.push_back(0.0f);
-
-	for (size_t i = 0; i < lpa_rpa_fine_path_indices.size() - 1; i++) {
-		float segment_dist = glm::distance(hs_vertices[lpa_rpa_fine_path_indices[i]], hs_vertices[lpa_rpa_fine_path_indices[i + 1]]);
-		total_distance += segment_dist;
-		cumulative_distances.push_back(total_distance);
-	}
-
-	auto get_distance_by_percentage = [total_distance](float percentage) -> float {
-		if (percentage < 0.0f) percentage = 0.0f;
-		if (percentage > 1.0f) percentage = 1.0f;
-
-		return total_distance * percentage;
-		};
+	UpdatePathLines(&lpa_rpa_path_lines, lpa_rpa_fine_path_indices, glm::vec3(1.0f, 0.0f, 0.0f), 3.0f);
 
 	std::vector<std::string> labels = { "LPA", "T3", "C3", "C4", "T4", "RPA" };
 	std::vector<float> percentages = { 0.0f, 0.10f, 0.30f, 0.70f, 0.90f, 1.0f };
-
-	for (size_t i = 0; i < labels.size(); i++)
-	{
-		float target_distance = get_distance_by_percentage(percentages[i]);
-		glm::vec3 point(0, 0, 0);
-
-		if (percentages[i] == 0.0f) {
-			point = hs_vertices[lpa_rpa_fine_path_indices.front()];
-			point_label_map[labels[i]] = point;
-
-			refpts_renderer->InsertPoint(point);
-			continue;
-		}
-
-		if (percentages[i] == 1.0f) {
-			point = hs_vertices[lpa_rpa_fine_path_indices.back()];
-			point_label_map[labels[i]] = point;
-
-			refpts_renderer->InsertPoint(point);
-			continue;
-		}
-
-		for (size_t j = 0; j < cumulative_distances.size() - 1; j++) {
-			if (target_distance >= cumulative_distances[j] && target_distance <= cumulative_distances[j + 1]) {
-
-				float start_dist = cumulative_distances[j];
-				float segment_length = cumulative_distances[j + 1] - cumulative_distances[j];
-				float remaining_distance = target_distance - start_dist;
-				float ratio = remaining_distance / segment_length;
-
-				glm::vec3 v_start = hs_vertices[lpa_rpa_fine_path_indices[j]];
-				glm::vec3 v_end = hs_vertices[lpa_rpa_fine_path_indices[j + 1]];
-
-				point = glm::mix(v_start, v_end, ratio);
-				point_label_map[labels[i]] = point;
-				refpts_renderer->InsertPoint(point);
-				break;
-			}
-		}
-	}
-
+	GetReferencePointsAlongPath(lpa_rpa_fine_path_indices, labels, percentages, refpts_renderer);
 }

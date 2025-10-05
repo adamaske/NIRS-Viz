@@ -73,8 +73,6 @@ public:
 	std::vector<unsigned int> horizontal_arc_rough_path_indices;
 	std::vector<unsigned int> horizontal_arc_fine_path_indices;
 	void DrawPaths(glm::mat4 view, glm::mat4 proj, glm::vec3 veiw_pos);
-	void UpdatePathLines();
-
 
 	bool draw_waypoints;
 	PointRenderer* nz_iz_waypoint_renderer;
@@ -113,9 +111,22 @@ public:
 	void LandmarksToClosestVertex();
 
 	void GenerateRays();
-	void CastRays();
+	std::vector<unsigned int> CastRays(std::vector<Ray> rays, PointRenderer* wp_render);
 	std::vector<unsigned int> FindFinePath(std::vector<unsigned int> rough_path);
 	void GenerateCoordinateSystem();
+
+	void UpdatePathLines(std::vector<Line*>* old_lines,
+						 const std::vector<unsigned int>& new_indcies, 
+						 const glm::vec3 color, 
+						 const float& thickness);
+
+
+	void GetReferencePointsAlongPath(
+		const std::vector<unsigned int>& fine_path_indices,
+		const std::vector<std::string>& labels,
+		const std::vector<float>& percentages,
+		PointRenderer* renderer
+	);
 
 	std::unordered_map<std::string, glm::vec3> point_label_map;
 	bool draw_refpts = true;
