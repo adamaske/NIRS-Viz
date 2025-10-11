@@ -1,17 +1,6 @@
-#include <iostream>
-#include <filesystem>
+#include "pch.h"
 
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp> 
 
-#include <imgui.h>
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_opengl3.h>
-
-#include <spdlog/spdlog.h>
 
 #include "Transform.h"
 #include "Shader.h"
@@ -21,6 +10,8 @@
 #include "Snirf.h"
 #include "Probe.h"
 #include "Head.h"
+
+#include "Core/Application.h"
 
 namespace fs = std::filesystem;
 // Function to handle GLFW errors
@@ -36,6 +27,13 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 
 // Main function
 int main() {
+
+	ApplicationSpecification app_spec;
+	Application* app = new Application(app_spec);
+    app->Run();
+
+    return 0;
+    /*
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW" << std::endl;
@@ -206,5 +204,5 @@ int main() {
     glfwDestroyWindow(window);
     glfwTerminate();
 
-    return 0;
+    return 0;*/
 }

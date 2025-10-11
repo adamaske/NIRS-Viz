@@ -24,7 +24,6 @@ endif()
 add_subdirectory( vendor/glfw )
 
 
-
 set(IMGUI_SOURCES
     ${VENDOR_DIR}/imgui/imgui.cpp
     ${VENDOR_DIR}/imgui/imgui_draw.cpp
@@ -33,14 +32,10 @@ set(IMGUI_SOURCES
     ${VENDOR_DIR}/imgui/backends/imgui_impl_glfw.cpp
     ${VENDOR_DIR}/imgui/backends/imgui_impl_opengl3.cpp
 )
-
-
 set(HDF5_ROOT "C:/Program Files/HDF_Group/HDF5/1.14.6")
-
 find_package(HDF5 REQUIRED)
 
-
-add_subdirectory( vendor/spdlog)
+add_subdirectory( ${VENDOR_DIR}/spdlog)
 
 add_library(assimp SHARED IMPORTED)
 set_target_properties(assimp PROPERTIES
@@ -65,15 +60,17 @@ set(SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 file(GLOB_RECURSE INCS "${INCLUDE_DIR}/*.h")
 file(GLOB_RECURSE SRCS "${SOURCE_DIR}/*.cpp")
 
-add_executable( ${PROJECT_NAME} ${SRCS} ${IMGUI_SOURCES} vendor/glad/src/glad.c )
+add_executable( ${PROJECT_NAME} 
+                ${SRCS} 
+                ${IMGUI_SOURCES} 
+                ${VENDOR_DIR}/glad/src/glad.cpp
+)
+
+target_precompile_headers(${PROJECT_NAME} PRIVATE ${INCLUDE_DIR}/pch.h)
 target_compile_options(${PROJECT_NAME} PRIVATE
-    # Applies /utf-8 ONLY if the C++ compiler is MSVC
     $<$<CXX_COMPILER_ID:MSVC>:/utf-8>
 )
-# Include the subdirectory and use the target HighFive.
-#add_subdirectory(${VENDOR_DIR}/HighFive INTERFACE)
 
-# Add vendor include directories to find header files
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${INCLUDE_DIR}
     ${VENDOR_DIR}/glfw/include
@@ -83,8 +80,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${VENDOR_DIR}/imgui
     ${VENDOR_DIR}/assimp/include
     ${VENDOR_DIR}/HighFive/include
-    ${HDF5_ROOT}/include
     ${VENDOR_DIR}/Eigen/include 
+    ${VENDOR_DIR}/ImGuizmo
 )
  
 

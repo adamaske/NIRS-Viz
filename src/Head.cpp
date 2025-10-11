@@ -47,6 +47,7 @@ Head::Head()
 	for (auto& lm : landmarks) {
 		lm->transform->Scale(glm::vec3(5.0f, 5.0f, 5.0f));
 	}
+
 	float lm_dist = 120.0;
 	naison.transform->Translate(0, 0, -lm_dist);
 	inion.transform	->Translate(0, 0, lm_dist);
@@ -109,6 +110,7 @@ void Head::Draw(glm::mat4 view, glm::mat4 proj, glm::vec3 view_pos)
 	if (draw_rays) DrawRays(view, proj, view_pos);
 	if (draw_paths) DrawPaths(view, proj, view_pos);
 	if (draw_refpts) refpts_renderer->Draw(view, proj);
+
 	ImGui::End();
 }
 

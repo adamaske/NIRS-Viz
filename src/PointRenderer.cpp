@@ -28,12 +28,16 @@ void PointRenderer::Draw(const glm::mat4 view, const glm::mat4 proj) {
 	shader->SetUniform4f("pointColor", color.x, color.y, color.z, color.w);
 	shader->SetUniformMat4f("model", transform->GetMatrix());
 	shader->SetUniformMat4f("view", view);
-	shader->SetUniformMat4f("projection", proj);
+	shader->SetUniformMat4f("projection", proj); 
+	shader->SetUniform1f("pointSize", point_size);
 
 	glBindVertexArray(vao);
-	glPointSize(point_size);
 	glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(points.size()));
 	glBindVertexArray(0);
+
+	for (auto& point : points) {
+		spdlog::info("Drawing point at {} {} {} with size {}", point.x, point.y, point.z, point_size);
+	}
 }
 
 void PointRenderer::Update() {

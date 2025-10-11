@@ -22,3 +22,6 @@
 [submodule "vendor/HighFive"]
 	path = vendor/HighFive
 	url = https://github.com/BlueBrain/HighFive.git
+[submodule "vendor/ImGuizmo"]
+	path = vendor/ImGuizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo.git
