@@ -1,1 +1,21 @@
 #pragma once
+
+#include "Events/Event.h"
+
+class Layer
+{
+public:
+	std::string debug_name;
+
+	Layer(const std::string& name = "Layer");
+	virtual ~Layer() = default;
+
+	virtual void OnAttach() {}
+	virtual void OnDetach() {}
+	virtual void OnUpdate(float dt) {}
+	virtual void OnRender() {}
+	virtual void OnImGuiRender() {}
+	virtual void OnEvent(Event& event) {}
+
+	const std::string& GetName() const { return debug_name; }
+};

@@ -31,6 +31,7 @@ set(IMGUI_SOURCES
     ${VENDOR_DIR}/imgui/imgui_widgets.cpp
     ${VENDOR_DIR}/imgui/backends/imgui_impl_glfw.cpp
     ${VENDOR_DIR}/imgui/backends/imgui_impl_opengl3.cpp
+    #${VENDOR_DIR}/ImGuizmo/ImGuizmo.cpp
 )
 set(HDF5_ROOT "C:/Program Files/HDF_Group/HDF5/1.14.6")
 find_package(HDF5 REQUIRED)
@@ -81,7 +82,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${VENDOR_DIR}/assimp/include
     ${VENDOR_DIR}/HighFive/include
     ${VENDOR_DIR}/Eigen/include 
-    ${VENDOR_DIR}/ImGuizmo
+   #${VENDOR_DIR}/ImGuizmo
 )
  
 

@@ -1,11 +1,14 @@
 #pragma once
 
+#include <string>
+
 #include "Core/Base.h"
 #include "Core/Window.h"
 #include "Events/Event.h"
 #include "Events/ApplicationEvent.h"
-
-#include <string>
+#include "Core/Layer.h"
+#include "Core/LayerStack.h"
+#include "GUI/ImGuiLayer.h"
 
 struct ApplicationCommandLineArgs
 {
@@ -35,6 +38,8 @@ public:
 	bool minimized = false;
 	float last_frame_time = 0.0f;
 
+	LayerStack layer_stack;
+	ImGuiLayer* imgui_layer;
 
 	Application(const ApplicationSpecification& spec);
 	~Application();

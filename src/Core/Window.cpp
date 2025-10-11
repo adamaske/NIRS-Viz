@@ -9,70 +9,73 @@
 
 #include <glad/glad.h>
 
-static uint8_t glfw_window_count = 0;
+static int glfw_window_count = 0;
 
 static void GLFWErrorCallback(int error, const char* description)
 {
 	spdlog::error("GLFW Error ({}): {}", error, description);
 }
 
-Window::Window(const WindowProps& props)
+Window::Window(const WindowSpecification& spec) : specification(spec)
 {
-	Init(props);
+	Init();
 }
 
 Window::~Window()
 {
 }
 
-void Window::Init(const WindowProps& props)
-{
-	window_data.Title = props.Title;
-	window_data.Width = props.Width;
-	window_data.Height = props.Height;
+void Window::Init()
+{   
+	// Populate window_data
+	window_data.title = specification.title;
+	window_data.width = specification.width;
+	window_data.height = specification.height;
 
+	// Initalize GLFW
+	
 
-	glfwSetErrorCallback(GLFWErrorCallback);
+	const auto init_glfw_glad = glfw_window_count == 0;
+	if (init_glfw_glad) {
+		if (!glfwInit())
+			spdlog::error("Could not intialize GLFW!");
 
-	spdlog::info("Creating window {} ({}, {})", props.Title, props.Width, props.Height);
-
-	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-	gl_window = glfwCreateWindow((int)props.Width, (int)props.Height, window_data.Title.c_str(), nullptr, nullptr);
-	if (gl_window == NULL) {
-		spdlog::error("Failed to create GLFW window");
-		glfwTerminate();
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	}
-	++glfw_window_count;
+
+	gl_window = glfwCreateWindow(specification.width, specification.height, specification.title.c_str(), nullptr, nullptr);
+	if (!gl_window)
+		spdlog::error("Failed to create GLFW window");
+	glfw_window_count++;
 
 	glfwMakeContextCurrent(gl_window);
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-		spdlog::error("Failed to initialize GLAD");
+
+	if (init_glfw_glad) {
+		if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+			spdlog::error("Failed to initialize GLAD");
+
+
+		spdlog::info("OpenGL Info:");
+		spdlog::info("  Version:  {}", (const char*)glad_glGetString(GL_VERSION));
+		spdlog::info("  Renderer: {}", (const char*)glad_glGetString(GL_RENDERER));
+		spdlog::info("  Vendor:   {}", (const char*)glad_glGetString(GL_VENDOR));
+
+		glfwSetErrorCallback(GLFWErrorCallback);
 	}
-
-	auto version = glad_glGetString(GL_VERSION);
-	auto renderer = glad_glGetString(GL_RENDERER);
-	auto vendor = glad_glGetString(GL_VENDOR);
-
-	spdlog::info("OpenGL Info:");
-	spdlog::info("  Version:  {}", (const char*)version);
-	spdlog::info("  Renderer: {}", (const char*)renderer);
-	spdlog::info("  Vendor:   {}", (const char*)vendor);
-
+	
 	glfwSetWindowUserPointer(gl_window, &window_data);
 	SetVSync(true);
 
 
-	glfwSetWindowSizeCallback(gl_window, [](GLFWwindow* _window, int width, int height)
+	glfwSetWindowSizeCallback(gl_window, [](GLFWwindow* _window, int _width, int _height)
 		{
 			WindowData& data = *(WindowData*)glfwGetWindowUserPointer(_window);
-			data.Width = width;
-			data.Height = height;
+			data.width = _width;
+			data.height = _height;
 
-			WindowResizeEvent event(width, height);
+			WindowResizeEvent event(_width, _height);
 			data.EventCallback(event);
 		});
 
@@ -160,11 +163,9 @@ void Window::Init(const WindowProps& props)
 void Window::Shutdown()
 {
 	glfwDestroyWindow(gl_window);
-	--glfw_window_count;
-	if (glfw_window_count == 0)
-	{
+	glfw_window_count--;
+	if(glfw_window_count == 0)
 		glfwTerminate();
-	}
 }
 
 void Window::OnUpdate(float dt)
@@ -175,13 +176,8 @@ void Window::OnUpdate(float dt)
 
 void Window::SetVSync(bool enabled)
 {
-	if (enabled)
-		glfwSwapInterval(1);
-	else
-		glfwSwapInterval(0);
-
-	window_data.VSync = enabled;
-
+	glfwSwapInterval(enabled);
+	window_data.vsync = enabled;
 }
 
 

@@ -32,13 +32,12 @@ void PointRenderer::Draw(const glm::mat4 view, const glm::mat4 proj) {
 	
 	glBindVertexArray(vao);
 	glPointSize(point_size);
-	glDrawArrays(GL_POINTS, 0, points.size());
+	glDrawArrays(GL_POINTS, 0, (int)points.size());
 	glBindVertexArray(0);
 }
 void PointRenderer::Update() {
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	// No need to bind VAO here, only VBO is needed for data update
-	glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(Point), points.data(), GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, (int)points.size() * sizeof(Point), points.data(), GL_DYNAMIC_DRAW);
 }
 
 void PointRenderer::InsertPoint(const Point& _point) {

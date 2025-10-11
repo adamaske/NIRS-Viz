@@ -3,10 +3,6 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include <imgui.h>
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_opengl3.h>
-
 #include <unordered_map>
 #include <unordered_set>
 #include <queue>
@@ -38,11 +34,6 @@ Head::Head()
 
 	line_shader = new Shader(std::string("C:/dev/NIRS-Viz/data/Shaders/Line.vert"), std::string("C:/dev/NIRS-Viz/data/Shaders/Line.frag"));
 
-	nz_iz_waypoint_renderer = new PointRenderer(15, {1, 0, 0, 1});
-	lpa_rpa_waypoint_renderer = new PointRenderer(15, {0, 1, 0, 1});
-
-	refpts_renderer = new PointRenderer(15, { 0.5, 0.9, 0.2, 1 });
-
 
 	for (auto& lm : landmarks) {
 		lm->transform->Scale(glm::vec3(5.0f, 5.0f, 5.0f));
@@ -61,6 +52,13 @@ Head::Head()
 	for (const auto& v : scalp_mesh->vertices) {
 		hs_vertices.push_back(glm::vec3(glm::translate(local_matrix, v.position)[3]));
 	}
+
+
+	nz_iz_waypoint_renderer = new PointRenderer(15, { 1, 0, 0, 1 });
+	lpa_rpa_waypoint_renderer = new PointRenderer(15, { 0, 1, 0, 1 });
+
+	refpts_renderer = new PointRenderer(15, { 0.5, 0.9, 0.2, 1 });
+
 };
 
 Head::~Head()
@@ -70,39 +68,6 @@ Head::~Head()
 
 void Head::Draw(glm::mat4 view, glm::mat4 proj, glm::vec3 view_pos)
 {
-
-	ImGui::Begin("Coordinate System Generator");
-
-	if (ImGui::Button("Generate Coordinates"))
-	{
-		GenerateCoordinateSystem();
-	};
-
-	ImGui::Text("Raycast Parameters");
-	ImGui::DragFloat(
-		"Rotation Step (deg)", // Label displayed in the GUI
-		&theta_step_size,      // Pointer to the float variable
-		0.5f,                  // Speed/sensitivity of dragging
-		0.1f,                  // Minimum allowed value
-		90.0f,                 // Maximum allowed value
-		"%.1f degrees"         // Display format
-	);
-	ImGui::DragFloat(
-		"Ray Length (mm)",      // Label displayed in the GUI
-		&ray_distance,          // Pointer to the float variable
-		1.0f,                   // Speed/sensitivity of dragging
-		10.0f,                  // Minimum allowed value (depends on mesh scale)
-		1000.0f,                // Maximum allowed value (depends on mesh scale)
-		"%.1f mm"               // Display format, assuming your mesh units are millimeters
-	);
-
-	ImGui::Checkbox("Draw Landmarks", &draw_landmarks);
-	ImGui::Checkbox("Draw Landmark Lines", &draw_landmark_lines);
-	ImGui::Checkbox("Draw Waypoints", &draw_waypoints);
-	ImGui::Checkbox("Draw Rays", &draw_rays);
-	ImGui::Checkbox("Draw Paths", &draw_paths);
-	ImGui::Checkbox("Draw Reference Points", &draw_refpts);
-
 	DrawScalp(view, proj, view_pos);
 	if (draw_landmarks) DrawLandmarks(view, proj, view_pos);
 	if (draw_waypoints) DrawWaypoints(view, proj);
@@ -111,7 +76,6 @@ void Head::Draw(glm::mat4 view, glm::mat4 proj, glm::vec3 view_pos)
 	if (draw_paths) DrawPaths(view, proj, view_pos);
 	if (draw_refpts) refpts_renderer->Draw(view, proj);
 
-	ImGui::End();
 }
 
 
@@ -173,13 +137,7 @@ void Head::DrawWaypoints(const glm::mat4& view, const glm::mat4& proj)
 
 void Head::DrawLandmarks(glm::mat4 view, glm::mat4 proj, glm::vec3 veiw_pos)
 {
-	for (auto lm : landmarks) {
-		glm::vec3 pos = lm->transform->position;
-		if (ImGui::DragFloat3(landmark_labels[lm->type].c_str(), glm::value_ptr(pos), 0.1f)) {
-			// position updated interactively
-			UpdateLandmark(lm->type, pos);
-		}
-	}
+	
 
 	landmark_shader->Bind();
 	landmark_shader->SetUniformMat4f("view", view);

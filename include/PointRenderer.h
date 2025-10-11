@@ -13,6 +13,7 @@ public:
 
 	float point_size = 10.0f;
 	glm::vec4 color;
+
 	std::vector<Point> points;
 	
 	Shader* shader;

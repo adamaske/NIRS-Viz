@@ -2,25 +2,21 @@
 #include "Events/Event.h"
 
 
-struct WindowProps
+struct WindowSpecification
 {
-	std::string Title;
-	uint32_t Width;
-	uint32_t Height;
-
-	WindowProps(const std::string& title = "Hazel Engine",
-		uint32_t width = 1600,
-		uint32_t height = 900)
-		: Title(title), Width(width), Height(height)
-	{
-	}
+	std::string title;
+	uint32_t width = 1280;
+	uint32_t height = 720;
+	bool resizeable = true;
+	bool vsync = true;
 };
+
 
 struct WindowData
 {
-	std::string Title;
-	unsigned int Width, Height;
-	bool VSync;
+	std::string title;
+	unsigned int width, height;
+	bool vsync;
 
 	EventCallbackFn EventCallback;
 };
@@ -28,23 +24,24 @@ struct WindowData
 class Window
 {
 public:
+	WindowSpecification specification;
 	WindowData window_data;
 	GLFWwindow* gl_window;
 
-	Window(const WindowProps & props);
+	Window(const WindowSpecification& spec);
 	virtual ~Window();
 
-	virtual void Init(const WindowProps& props);
+	virtual void Init();
 	virtual void Shutdown();
 
 	virtual void OnUpdate(float dt);
-	virtual unsigned int GetWidth() const  { return window_data.Width; }
-	virtual unsigned int GetHeight() const { return window_data.Height; }
+	virtual unsigned int GetWidth() const  { return window_data.width; }
+	virtual unsigned int GetHeight() const { return window_data.height; }
 
 	virtual void SetEventCallback(const EventCallbackFn& callback) { window_data.EventCallback = callback; }
 	virtual void SetVSync(bool enabled) ;
 
-	virtual void* GetNativeWindow() const { return gl_window; }
+	GLFWwindow* GetHandle() const { return gl_window; }
 
 
 
