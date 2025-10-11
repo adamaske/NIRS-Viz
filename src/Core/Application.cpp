@@ -23,13 +23,12 @@ Application::Application(const ApplicationSpecification& spec) : specification(s
 	instance = this;
 
 
-	if (!specification.WorkingDirectory.empty())
-		std::filesystem::current_path(specification.WorkingDirectory);
+	//if (!specification.WorkingDirectory.empty())
+	//	std::filesystem::current_path(specification.WorkingDirectory);
 
-	window = CreateScope<Window>(WindowProps(specification.Name));
-	window->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
-
-
+   window = new Window(WindowProps(specification.Name, 1280, 720));
+   window->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
+	
 }
 
 Application::~Application()
@@ -53,54 +52,54 @@ void Application::OnEvent(Event& e)
 
 void Application::Run()
 {
+    GLFWwindow* _window = window->gl_window;
+	auto screenWidth = window->GetWidth();
+	auto screenHeight = window->GetHeight();
+    
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    ImGui::StyleColorsDark();
 
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO(); (void)io;
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-	ImGui::StyleColorsDark();
-
-	ImGui_ImplGlfw_InitForOpenGL(window.get()->window, true);
-	ImGui_ImplOpenGL3_Init("#version 460");
-
-	glEnable(GL_DEPTH_TEST);
-    glEnable(GL_PROGRAM_POINT_SIZE);
-
-	fs::path resource_dir = fs::path("C:/dev/NIRS-Viz/data");
-
-	fs::path vertex_path = resource_dir / "Shaders/Phong.vert";
-	fs::path fragment_path = resource_dir / "Shaders/Phong.frag";
-	fs::path mesh_path = resource_dir / "cortex.obj";
-
-	std::unordered_map<std::string, Transform*> orbit_target_map = {};
-
-	Camera camera(glm::vec3(0, 0, 300.0f)); // 300 units backwards
-	camera.aspect_ratio = static_cast<float>(window->GetWidth()) / static_cast<float>(window->GetHeight());
-
-	Head head = Head();
-	orbit_target_map["Head"] = head.transform;
-
-	Cortex cortex = Cortex();
-	cortex.transform.Translate(glm::vec3(0, 0, -50.0f));
-	orbit_target_map["Cortex"] = &cortex.transform;
+    ImGui_ImplGlfw_InitForOpenGL(_window, true);
+    ImGui_ImplOpenGL3_Init("#version 460");
+    
+    glfwSwapInterval(1);
+    glEnable(GL_DEPTH_TEST);
 
 
-	static std::string current_target = "Head";
-	camera.orbit_target = orbit_target_map[current_target];
+    fs::path resource_dir = fs::path("C:/dev/NIRS-Viz/data");
 
-    PointRenderer* pr = new PointRenderer(15, {1, 1, 1, 1});
-    pr->InsertPoint({ 0, 120, 0 });
+    fs::path vertex_path = resource_dir / "Shaders/Phong.vert";
+    fs::path fragment_path = resource_dir / "Shaders/Phong.frag";
+    fs::path mesh_path = resource_dir / "cortex.obj";
 
-	glm::vec4 clear_color = glm::vec4(0.45f, 0.55f, 0.60f, 1.00f);
+    std::unordered_map<std::string, Transform*> orbit_target_map = {};
 
-	while (running) {
-		float time = glfwGetTime();
-		float dt = time - last_frame_time;
-		last_frame_time = time;
+    Camera camera(glm::vec3(0, 0, 300.0f)); // 300 units backwards
+    camera.aspect_ratio = static_cast<float>(screenWidth) / static_cast<float>(screenHeight);
 
 
+    Head head = Head();
+    orbit_target_map["Head"] = head.transform;
+    //head.transform->Scale(glm::vec3(100.0f, 100.0f, 100.0f));
+
+    Cortex cortex = Cortex();
+    cortex.transform.Translate(glm::vec3(0, 0, -50.0f));
+    orbit_target_map["Cortex"] = &cortex.transform;
+
+    //SNIRF snirf("C:/dev/NIRS-Viz/data/example.snirf");
+    //Probe probe(&snirf);
+    //orbit_target_map["Probe"] = probe.transform;
+
+    static std::string current_target = "Head";
+    camera.orbit_target = orbit_target_map[current_target];
+
+    glm::vec4 clear_color = glm::vec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+    while (!glfwWindowShouldClose(_window)) {
         glfwPollEvents();
-
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -175,16 +174,29 @@ void Application::Run()
 
         auto view = camera.GetViewMatrix();
         auto projection = camera.GetProjectionMatrix();
+
+        //cortex.Draw(view, projection, camera.position);
+        //refpts.Draw(view, projection);
         head.Draw(view, projection, camera.position);
 
-        pr->Draw(view, projection);
+
+        //
+        //
+        //glm::mat4 refpts_T = glm::mat4(1.0f);
+        //refpts_T = glm::translate(refpts_T, glm::vec3(refpts_x_position, 0.0f, 0.0));
+        //refpts_T = glm::scale(refpts_T, glm::vec3(0.5f, 0.5f, 0.5f)); // make refpts larger
+        //refpts_T = glm::rotate(refpts_T, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        //refpts.Draw(view, projection, refpts_T);
+        //glEnable(GL_DEPTH_TEST);
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
+        glfwSwapBuffers(_window);
+    }
 
-        window->OnUpdate(dt);
-	}
+    glfwDestroyWindow(_window);
+    glfwTerminate();
 }
 
 void Application::Shutdown()

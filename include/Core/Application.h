@@ -30,8 +30,7 @@ public:
 
 	ApplicationSpecification specification;
 	static Application* instance;
-
-	Scope<Window> window;
+	Window* window;
 	bool running = true;
 	bool minimized = false;
 	float last_frame_time = 0.0f;

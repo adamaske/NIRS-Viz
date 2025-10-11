@@ -28,8 +28,8 @@ struct WindowData
 class Window
 {
 public:
-	WindowData data;
-	GLFWwindow* window;
+	WindowData window_data;
+	GLFWwindow* gl_window;
 
 	Window(const WindowProps & props);
 	virtual ~Window();
@@ -38,13 +38,13 @@ public:
 	virtual void Shutdown();
 
 	virtual void OnUpdate(float dt);
-	virtual unsigned int GetWidth() const  { return data.Width; }
-	virtual unsigned int GetHeight() const { return data.Height; }
+	virtual unsigned int GetWidth() const  { return window_data.Width; }
+	virtual unsigned int GetHeight() const { return window_data.Height; }
 
-	virtual void SetEventCallback(const EventCallbackFn& callback) { data.EventCallback = callback; }
+	virtual void SetEventCallback(const EventCallbackFn& callback) { window_data.EventCallback = callback; }
 	virtual void SetVSync(bool enabled) ;
 
-	virtual void* GetNativeWindow() const { return window; }
+	virtual void* GetNativeWindow() const { return gl_window; }
 
 
 

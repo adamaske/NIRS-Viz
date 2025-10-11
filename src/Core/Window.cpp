@@ -27,30 +27,29 @@ Window::~Window()
 
 void Window::Init(const WindowProps& props)
 {
-	data.Title = props.Title;
-	data.Width = props.Width;
-	data.Height = props.Height;
+	window_data.Title = props.Title;
+	window_data.Width = props.Width;
+	window_data.Height = props.Height;
 
+
+	glfwSetErrorCallback(GLFWErrorCallback);
 
 	spdlog::info("Creating window {} ({}, {})", props.Title, props.Width, props.Height);
 
-	if(glfw_window_count == 0)
-	{
-		int success = glfwInit();
-		if (!success)
-		{
-			spdlog::error("Could not initialize GLFW!");
-		}
-		glfwSetErrorCallback(GLFWErrorCallback);
-	}
+	glfwInit();
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	window = glfwCreateWindow((int)props.Width, (int)props.Height, data.Title.c_str(), nullptr, nullptr);
+	gl_window = glfwCreateWindow((int)props.Width, (int)props.Height, window_data.Title.c_str(), nullptr, nullptr);
+	if (gl_window == NULL) {
+		spdlog::error("Failed to create GLFW window");
+		glfwTerminate();
+	}
 	++glfw_window_count;
 
-	glfwMakeContextCurrent(window);
-	int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-
-	if (!status) {
+	glfwMakeContextCurrent(gl_window);
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		spdlog::error("Failed to initialize GLAD");
 	}
 
@@ -63,11 +62,11 @@ void Window::Init(const WindowProps& props)
 	spdlog::info("  Renderer: {}", (const char*)renderer);
 	spdlog::info("  Vendor:   {}", (const char*)vendor);
 
-	glfwSetWindowUserPointer(window, &data);
+	glfwSetWindowUserPointer(gl_window, &window_data);
 	SetVSync(true);
 
 
-	glfwSetWindowSizeCallback(window, [](GLFWwindow* _window, int width, int height)
+	glfwSetWindowSizeCallback(gl_window, [](GLFWwindow* _window, int width, int height)
 		{
 			WindowData& data = *(WindowData*)glfwGetWindowUserPointer(_window);
 			data.Width = width;
@@ -77,14 +76,14 @@ void Window::Init(const WindowProps& props)
 			data.EventCallback(event);
 		});
 
-	glfwSetWindowCloseCallback(window, [](GLFWwindow* _window)
+	glfwSetWindowCloseCallback(gl_window, [](GLFWwindow* _window)
 		{
 			WindowData& data = *(WindowData*)glfwGetWindowUserPointer(_window);
 			WindowCloseEvent event;
 			data.EventCallback(event);
 		});
 
-	glfwSetKeyCallback(window, [](GLFWwindow* _window, int key, int scancode, int action, int mods)
+	glfwSetKeyCallback(gl_window, [](GLFWwindow* _window, int key, int scancode, int action, int mods)
 		{
 			WindowData& data = *(WindowData*)glfwGetWindowUserPointer(_window);
 
@@ -112,7 +111,7 @@ void Window::Init(const WindowProps& props)
 		});
 
 
-	glfwSetCharCallback(window, [](GLFWwindow* _window, unsigned int keycode)
+	glfwSetCharCallback(gl_window, [](GLFWwindow* _window, unsigned int keycode)
 		{
 			WindowData& data = *(WindowData*)glfwGetWindowUserPointer(_window);
 
@@ -120,7 +119,7 @@ void Window::Init(const WindowProps& props)
 			data.EventCallback(event);
 		});
 
-	glfwSetMouseButtonCallback(window, [](GLFWwindow* _window, int button, int action, int mods)
+	glfwSetMouseButtonCallback(gl_window, [](GLFWwindow* _window, int button, int action, int mods)
 		{
 			WindowData& data = *(WindowData*)glfwGetWindowUserPointer(_window);
 
@@ -141,7 +140,7 @@ void Window::Init(const WindowProps& props)
 			}
 		});
 
-	glfwSetScrollCallback(window, [](GLFWwindow* _window, double xOffset, double yOffset)
+	glfwSetScrollCallback(gl_window, [](GLFWwindow* _window, double xOffset, double yOffset)
 		{
 			WindowData& data = *(WindowData*)glfwGetWindowUserPointer(_window);
 
@@ -149,7 +148,7 @@ void Window::Init(const WindowProps& props)
 			data.EventCallback(event);
 		});
 
-	glfwSetCursorPosCallback(window, [](GLFWwindow* _window, double xPos, double yPos)
+	glfwSetCursorPosCallback(gl_window, [](GLFWwindow* _window, double xPos, double yPos)
 		{
 			WindowData& data = *(WindowData*)glfwGetWindowUserPointer(_window);
 
@@ -160,7 +159,7 @@ void Window::Init(const WindowProps& props)
 
 void Window::Shutdown()
 {
-	glfwDestroyWindow(window);
+	glfwDestroyWindow(gl_window);
 	--glfw_window_count;
 	if (glfw_window_count == 0)
 	{
@@ -171,7 +170,7 @@ void Window::Shutdown()
 void Window::OnUpdate(float dt)
 {
 	glfwPollEvents();
-	glfwSwapBuffers(window);
+	glfwSwapBuffers(gl_window);
 }
 
 void Window::SetVSync(bool enabled)
@@ -181,7 +180,7 @@ void Window::SetVSync(bool enabled)
 	else
 		glfwSwapInterval(0);
 
-	data.VSync = enabled;
+	window_data.VSync = enabled;
 
 }
 

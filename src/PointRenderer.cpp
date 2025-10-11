@@ -15,10 +15,10 @@ PointRenderer::PointRenderer(const float& size, const glm::vec4& _color)
 
 	glBindVertexArray(vao);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(glm::vec3), points.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(Point), points.data(), GL_DYNAMIC_DRAW);
 
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Point), (void*)0);
 
 	glBindVertexArray(0);
 }
@@ -29,22 +29,16 @@ void PointRenderer::Draw(const glm::mat4 view, const glm::mat4 proj) {
 	shader->SetUniformMat4f("model", transform->GetMatrix());
 	shader->SetUniformMat4f("view", view);
 	shader->SetUniformMat4f("projection", proj); 
-	shader->SetUniform1f("pointSize", point_size);
-
+	
 	glBindVertexArray(vao);
-	glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(points.size()));
+	glPointSize(point_size);
+	glDrawArrays(GL_POINTS, 0, points.size());
 	glBindVertexArray(0);
-
-	for (auto& point : points) {
-		spdlog::info("Drawing point at {} {} {} with size {}", point.x, point.y, point.z, point_size);
-	}
 }
-
 void PointRenderer::Update() {
-	glBindVertexArray(vao);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(glm::vec3), points.data(), GL_STATIC_DRAW);
-	glBindVertexArray(0);
+	// No need to bind VAO here, only VBO is needed for data update
+	glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(Point), points.data(), GL_DYNAMIC_DRAW);
 }
 
 void PointRenderer::InsertPoint(const Point& _point) {

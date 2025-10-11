@@ -13,17 +13,20 @@
 
 #include "Core/Application.h"
 
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
 namespace fs = std::filesystem;
 // Function to handle GLFW errors
-void glfw_error_callback(int error, const char* description) {
-    //fprintf(stderr, "GLFW Error %d: %s\n", error, description);
-	spdlog::error("GLFW Error {}: {}", error, description);
-}
-
-// Function to handle window resizing
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-    glViewport(0, 0, width, height);
-}
+//void glfw_error_callback(int error, const char* description) {
+//    //fprintf(stderr, "GLFW Error %d: %s\n", error, description);
+//	spdlog::error("GLFW Error {}: {}", error, description);
+//}
+//
+//// Function to handle window resizing
+//void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+//    glViewport(0, 0, width, height);
+//}
 
 // Main function
 int main() {
@@ -31,7 +34,7 @@ int main() {
 	ApplicationSpecification app_spec;
 	Application* app = new Application(app_spec);
     app->Run();
-
+    
     return 0;
     /*
     glfwSetErrorCallback(glfw_error_callback);
